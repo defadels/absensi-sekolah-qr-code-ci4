@@ -1,10 +1,6 @@
 <?= $this->extend('templates/starting_page_layout'); ?>
 
 <?= $this->section('navaction') ?>
-<!--<a href="<?= base_url('/'); ?>" class="btn btn-primary pull-right pl-3">
-    <i class="material-icons mr-2">qr_code</i>
-    Scan QR
-</a>-->
 <?= $this->endSection() ?>
 
 <?= $this->section('content'); ?>
@@ -72,26 +68,34 @@
 
                         <button type="submit" class="btn btn-primary btn-block"><?= lang('Auth.login') ?></button>
 
-                        <div class="text-center mt-3">
-                           <p class="mb-1">Atau ajukan ketidakhadiran:</p>
-                           <div class="d-flex flex-column">
-                              <a href="<?= base_url('izin') ?>" class="btn btn-info btn-block mb-2">
-                                 <i class="material-icons mr-2">mail</i> Ajukan Izin / Sakit
-                              </a>
-                              <a href="<?= base_url('cek-kehadiran') ?>" class="btn btn-default btn-block">
-                                 <i class="material-icons mr-2">visibility</i> Cek Kehadiran Siswa
-                              </a>
-                           </div>
-                        </div>
-
-                        <?php if (setting('Auth.allowMagicLinkLogins')): ?>
-                           <p class="text-center mt-3">
-                              <a href="<?= url_to('magic-link') ?>"><?= lang('Auth.forgotPassword') ?></a>
-                           </p>
-                        <?php endif; ?>
-
                         <div class="clearfix"></div>
                      </form>
+
+                     <!-- TOMBOL AKTIVASI / KLAIM AKUN (SUDAH DIPERBAIKI KE /DAFTAR) -->
+                     <div class="text-center mt-3">
+                         <a href="<?= base_url('daftar'); ?>" class="btn btn-default btn-block" style="background-color: #e91e63; color: white; width: 100%; display: block; text-decoration: none; padding: 12px; border-radius: 4px;">
+                             <i class="material-icons mr-2" style="vertical-align: middle;">how_to_reg</i> Aktivasi / Klaim Akun (Guru / Tendik)
+                         </a>
+                     </div>
+
+                     <div class="text-center mt-3">
+                        <p class="mb-1">Atau ajukan ketidakhadiran:</p>
+                        <div class="d-flex flex-column">
+                           <a href="<?= base_url('izin') ?>" class="btn btn-info btn-block mb-2">
+                              <i class="material-icons mr-2">mail</i> Ajukan Izin / Sakit
+                           </a>
+                           <a href="<?= base_url('cek-kehadiran') ?>" class="btn btn-default btn-block">
+                              <i class="material-icons mr-2">visibility</i> Cek Kehadiran (Guru / Tendik)
+                           </a>
+                        </div>
+                     </div>
+
+                     <?php if (setting('Auth.allowMagicLinkLogins')): ?>
+                        <p class="text-center mt-3">
+                           <a href="<?= url_to('magic-link') ?>"><?= lang('Auth.forgotPassword') ?></a>
+                        </p>
+                     <?php endif; ?>
+
                   </div>
                </div>
             </div>

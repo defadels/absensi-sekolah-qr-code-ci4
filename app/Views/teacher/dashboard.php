@@ -1,322 +1,119 @@
-<?= $this->extend('templates/admin_page_layout') ?>
-<?= $this->section('styles') ?>
-<style>
-    .chart-container {
-        position: relative;
-        height: 300px;
-        width: 100%;
-    }
-</style>
-<?= $this->endSection() ?>
-<?= $this->section('content') ?>
-<div class="content">
-    <div class="container-fluid">
-        <?php if (isset($no_class)): ?>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <h3 class="text-center">Anda belum ditugaskan sebagai Wali Kelas di kelas manapun.</h3>
-                            <p class="text-center">Silahkan hubungi administrator untuk penugasan kelas.</p>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Guru & Tendik</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="grey lighten-4">
+
+    <!-- Navbar -->
+    <nav class="indigo darken-2">
+        <div class="nav-wrapper container">
+            <a href="<?= base_url('teacher/dashboard'); ?>" class="brand-logo">Portal Absensi Guru</a>
+            <ul id="nav-mobile" class="right">
+                <li><a href="<?= base_url('logout'); ?>"><i class="material-icons left">exit_to_app</i>Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 30px; margin-bottom: 50px;">
+        
+        <!-- HEADER BANNER: PROFIL PEGAWAI -->
+        <div class="row">
+            <div class="col s12">
+                <div class="card white" style="padding: 25px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; font-weight: bold;">
+                        Selamat Datang, <?= esc($guru['nama_guru'] ?? $guru['nama_tendik'] ?? $guru['nama'] ?? 'Pengguna'); ?>!
+                    </h4>
+                    <p class="grey-text text-darken-2" style="font-size: 15px; margin-bottom: 0; line-height: 1.8;">
+                        <b>NUPTK / NIP:</b> <?= esc($guru['nuptk'] ?? $guru['nip'] ?? '-'); ?><br>
+                        <b>Mapel / Jabatan:</b> 
+                        <span class="chip green lighten-4 green-text text-darken-3" style="font-weight: bold; font-size: 14px;">
+                            <?= esc($mapel); ?>
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 KARTU MENU UTAMA -->
+        <div class="row">
+            
+            <!-- KARTU 1: QR CODE SAYA -->
+            <div class="col s12 m6">
+                <div class="card white" style="padding: 20px; border-radius: 8px; min-height: 250px;">
+                    <div class="center-align">
+                        <i class="material-icons teal-text" style="font-size: 48px;">qr_code_2</i>
+                        <h5><b>QR Code Saya</b></h5>
+                        <p class="grey-text">Tunjukkan QR Code di HP kepada Admin kantor, atau unduh & cetak ID Card.</p>
+                        
+                        <div style="margin-top: 20px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                            <a href="<?= base_url('teacher/qr'); ?>" class="btn teal waves-effect waves-light">
+                                <i class="material-icons left">visibility</i>Buka
+                            </a>
+                            <a href="<?= base_url('teacher/qr'); ?>" class="btn blue waves-effect waves-light">
+                                <i class="material-icons left">file_download</i>Unduh
+                            </a>
+                            <a href="javascript:void(0)" onclick="let p = window.open('<?= base_url('teacher/qr'); ?>', '_blank'); p.focus(); setTimeout(() => { p.print(); }, 1000);" class="btn indigo waves-effect waves-light">
+                                <i class="material-icons left">print</i>Cetak
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        <?php else: ?>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card card-stats">
-                        <div class="card-header card-header-info card-header-icon">
-                            <div class="card-icon">
-                                <i class="material-icons">school</i>
-                            </div>
-                            <p class="card-category">Kelas Anda</p>
-                            <h3 class="card-title">
-                                <?= $kelas['tingkat'] . ' ' . $kelas['jurusan'] . ' ' . $kelas['index_kelas']; ?>
-                            </h3>
-                        </div>
-                        <div class="card-footer">
-                            <div class="stats">
-                                <i class="material-icons">person</i> Total Siswa: <?= $summary['total_siswa']; ?>
-                                <span class="mx-2">|</span>
-                                <i class="material-icons text-primary">qr_code</i> <a class="text-primary" href="<?= base_url('teacher/qr'); ?>">Download QR Code Siswa</a>
-                            </div>
-                        </div>
+
+            <!-- KARTU 2: PENGAJUAN PERIZINAN -->
+            <div class="col s12 m6">
+                <div class="card white" style="padding: 20px; border-radius: 8px; min-height: 250px;">
+                    <div class="center-align">
+                        <i class="material-icons blue-text" style="font-size: 48px;">assignment</i>
+                        <h5><b>Pengajuan Perizinan</b></h5>
+                        <p class="grey-text">Ajukan permohonan izin atau sakit secara online beserta dokumen pendukung.</p>
+                        <a href="<?= base_url('teacher/perizinan'); ?>" class="btn blue waves-effect waves-light" style="width: 100%; margin-top: 20px;">Ajukan Izin</a>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header card-header-primary">
-                            <h4 class="card-title"><b>Statistik Kehadiran Kelas Hari Ini</b></h4>
-                            <p class="card-category"><?= date('d F Y'); ?></p>
-                        </div>
-                        <div class="card-body">
-                            <?php 
-                                $nowTime = \CodeIgniter\I18n\Time::now()->toTimeString();
-                                $standard = $generalSettings->jam_pulang_standard ?? '14:00:00';
-                                $isFinal = $nowTime > $standard;
-                            ?>
-                            <div class="row text-center flex-nowrap">
-                                <div class="col-2">
-                                    <h5 class="text-success text-nowrap"><b>Hadir</b></h5>
-                                    <h4 class="text-nowrap" id="hadirCount"><?= $summary['hadir_hari_ini']; ?></h4>
-                                </div>
-                                <div class="col-2">
-                                    <h5 class="text-warning text-nowrap"><b>Sakit</b></h5>
-                                    <h4 class="text-nowrap" id="sakitCount"><?= $summary['sakit_hari_ini']; ?></h4>
-                                </div>
-                                <div class="col-2">
-                                    <h5 class="text-info text-nowrap"><b>Izin</b></h5>
-                                    <h4 class="text-nowrap" id="izinCount"><?= $summary['izin_hari_ini']; ?></h4>
-                                </div>
-                                <div class="col-2">
-                                    <h5 class="text-<?= $isFinal ? 'danger' : 'default' ?> text-nowrap" id="alfaLabel"><b><?= $isFinal ? 'Alfa' : 'Belum Scan' ?></b></h5>
-                                    <h4 class="text-nowrap" id="alfaCount"><?= $summary['alfa_hari_ini']; ?></h4>
-                                </div>
-                                <div class="col-1">
-                                    <div class="border-right mx-auto h-100" style="width: 0;"></div>
-                                </div>
-                                <div class="col-2 col-sm-3">
-                                    <h5 class="text-primary text-nowrap"><b>Total</b></h5>
-                                    <h4 class="text-nowrap"><?= $summary['total_siswa']; ?></h4>
-                                </div>
-                            </div>
-                        </div>
+        </div>
+
+        <div class="row">
+
+            <!-- KARTU 3: AUDIT LOG / RIWAYAT -->
+            <div class="col s12 m6">
+                <div class="card white" style="padding: 20px; border-radius: 8px; min-height: 250px;">
+                    <div class="center-align">
+                        <i class="material-icons brown-text" style="font-size: 48px;">history</i>
+                        <h5><b>Audit Log / Riwayat</b></h5>
+                        <p class="grey-text">Lihat riwayat aktivitas dan rekapitulasi catatan jam kehadiran Anda.</p>
+                        <a href="<?= base_url('teacher/attendance'); ?>" class="btn brown waves-effect waves-light" style="width: 100%; margin-top: 20px;">Lihat Riwayat</a>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header card-header-warning">
-                            <h4 class="card-title"><b>Top Keterlambatan Kelas</b></h4>
-                            <p class="card-category">Akumulasi menit keterlambatan</p>
-                        </div>
-                        <div class="card-body table-responsive">
-                            <table class="table table-hover">
-                                <thead class="text-warning">
-                                    <th>NIS</th>
-                                    <th>Nama Siswa</th>
-                                    <th>Poin</th>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($topLateStudents)): ?>
-                                        <tr>
-                                            <td colspan="3" class="text-center">Belum ada data.</td>
-                                        </tr>
-                                    <?php endif; ?>
-                                    <?php foreach ($topLateStudents as $ls): ?>
-                                        <tr>
-                                            <td><?= $ls['nis'] ?></td>
-                                            <td><b><?= $ls['nama_siswa'] ?></b></td>
-                                            <td><span class="badge badge-warning"><?= $ls['poin_pelanggaran'] ?></span></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header card-header-danger">
-                            <h4 class="card-title"><b>Peringatan Alfa 3 Hari+</b></h4>
-                            <p class="card-category">Siswa yang tidak hadir 3 hari beruntun</p>
-                        </div>
-                        <div class="card-body table-responsive">
-                            <table class="table table-hover">
-                                <thead class="text-danger">
-                                    <th>Nama Siswa</th>
-                                    <th>Status</th>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($absenteeAlerts)): ?>
-                                        <tr>
-                                            <td colspan="2" class="text-center">Tidak ada peringatan.</td>
-                                        </tr>
-                                    <?php endif; ?>
-                                    <?php foreach ($absenteeAlerts as $aa): ?>
-                                        <tr>
-                                            <td><b><?= $aa['nama_siswa'] ?></b><br><small><?= $aa['nis'] ?></small></td>
-                                            <td><span class="badge badge-danger">Alfa <?= $aa['days_count'] ?> Hari</span></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-header card-header-info">
-                            <h4 class="card-title">Tingkat Kehadiran Kelas (7 Hari Terakhir)</h4>
-                            <p class="card-category">Statistik kehadiran siswa per status</p>
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <canvas id="kehadiranSiswaKelas"></canvas>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="stats">
-                                <i class="material-icons text-info">assessment</i> <a class="text-info" href="<?= base_url('teacher/laporan'); ?>">Download Laporan</a>
-                            </div>
+            <!-- KARTU 4: INFORMASI PENGAMPU -->
+            <div class="col s12 m6">
+                <div class="card white" style="padding: 20px; border-radius: 8px; min-height: 250px;">
+                    <div class="center-align">
+                        <i class="material-icons purple-text" style="font-size: 48px;">school</i>
+                        <h5><b>Informasi Pengampu / Tugas</b></h5>
+                        <p class="grey-text" style="margin-bottom: 5px;">Mata Pelajaran / Jabatan Aktif saat ini:</p>
+                        <h6 class="purple-text text-darken-2" style="font-weight: bold; margin-top: 10px; font-size: 18px;">
+                            <?= esc($mapel); ?>
+                        </h6>
+                        <div style="margin-top: 25px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
+                            <span class="grey-text text-darken-1" style="font-size: 13px;">Status Kepegawaian: <b class="green-text text-darken-2">Aktif</b></span>
                         </div>
                     </div>
                 </div>
             </div>
-        <?php endif; ?>
+
+        </div>
+
     </div>
-</div>
-<?= $this->endSection() ?>
 
-<?= $this->section('scripts') ?>
-<?php if (!isset($no_class)): ?>
-    <!-- Chart.js -->
-    <script src="<?= base_url('assets/js/plugins/chartjs/chart.umd.min.js') ?>"></script>
-    <script>
-        const chartLabels = <?= json_encode($dateRange) ?>;
-        const chartLabelColors = <?= json_encode($chartLabelColors) ?>;
-
-        const chartColors = {
-            hadir: { border: '#4caf50', bg: 'rgba(76, 175, 80, 1)' },
-            sakit: { border: '#ff9800', bg: 'rgba(255, 152, 0, 1)' },
-            izin: { border: '#00bcd4', bg: 'rgba(0, 188, 212, 1)' },
-            alfa: { border: '#f44336', bg: 'rgba(244, 67, 54, 1)' },
-            belum_absen: { border: '#999', bg: 'rgba(153, 153, 153, 0.8)' }
-        };
-
-        function initTeacherCharts() {
-            const ctx = document.getElementById('kehadiranSiswaKelas');
-            if (ctx) {
-                const data = {
-                    hadir: <?= json_encode($grafikKehadiran['hadir']) ?>,
-                    sakit: <?= json_encode($grafikKehadiran['sakit']) ?>,
-                    izin: <?= json_encode($grafikKehadiran['izin']) ?>,
-                    alfa: <?= json_encode($grafikKehadiran['alfa']) ?>,
-                    belum_absen: <?= json_encode($grafikKehadiran['belum_absen']) ?>
-                };
-
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: chartLabels,
-                        datasets: [
-                            {
-                                label: 'Hadir',
-                                data: data.hadir,
-                                borderColor: chartColors.hadir.border,
-                                backgroundColor: chartColors.hadir.bg
-                            },
-                            {
-                                label: 'Sakit',
-                                data: data.sakit,
-                                borderColor: chartColors.sakit.border,
-                                backgroundColor: chartColors.sakit.bg
-                            },
-                            {
-                                label: 'Izin',
-                                data: data.izin,
-                                borderColor: chartColors.izin.border,
-                                backgroundColor: chartColors.izin.bg
-                            },
-                            {
-                                label: 'Belum Absen',
-                                data: data.belum_absen,
-                                borderColor: chartColors.belum_absen.border,
-                                backgroundColor: chartColors.belum_absen.bg
-                            },
-                            {
-                                label: 'Alfa',
-                                data: data.alfa,
-                                borderColor: chartColors.alfa.border,
-                                backgroundColor: chartColors.alfa.bg
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    padding: 20
-                                }
-                            },
-                            tooltip: {
-                                enabled: true,
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                titleFont: { size: 14 },
-                                bodyFont: { size: 13 },
-                                padding: 12,
-                                cornerRadius: 8,
-                                callbacks: {
-                                    label: function (context) {
-                                        return context.dataset.label + ': ' + context.parsed.y + ' siswa';
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                stacked: false,
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1,
-                                    callback: function (value) {
-                                        if (Number.isInteger(value)) return value;
-                                    }
-                                },
-                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                            },
-                            x: {
-                                stacked: false,
-                                grid: { display: false },
-                                ticks: {
-                                    color: chartLabelColors
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        $(document).ready(function () {
-            initTeacherCharts();
-
-            // Fitur Live Monitoring (Update setiap 10 detik)
-            setInterval(function() {
-                $.ajax({
-                    url: "<?= base_url('teacher/dashboard/live-stats') ?>",
-                    type: "GET",
-                    success: function(response) {
-                        if ($('#hadirCount').length) {
-                            $('#hadirCount').text(response.stats.hadir);
-                            $('#sakitCount').text(response.stats.sakit);
-                            $('#izinCount').text(response.stats.izin);
-                            $('#alfaCount').text(response.stats.alfa);
-                            
-                            const alfaLabel = $('#alfaLabel');
-                            if (response.isAfterSchool) {
-                                alfaLabel.removeClass('text-default').addClass('text-danger').html('<b>Alfa</b>');
-                            } else {
-                                alfaLabel.removeClass('text-danger').addClass('text-default').html('<b>Belum Scan</b>');
-                            }
-                        }
-                    }
-                });
-            }, 10000);
-        });
-    </script>
-<?php endif; ?>
-<?= $this->endSection() ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>

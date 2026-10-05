@@ -6,7 +6,7 @@
             <th><b>Username</b></th>
             <th><b>Email</b></th>
             <th><b>Role</b></th>
-            <th><b>Guru</b></th>
+            <th><b>Guru / Tendik</b></th>
             <th><b>Status</b></th>
             <th><b>Aksi</b></th>
          </thead>
@@ -15,27 +15,63 @@
             foreach ($data as $value): ?>
                <tr>
                   <td><?= $i; ?></td>
-                  <td><?= $value['username']; ?></td>
-                  <td><b><?= $value['email']; ?></b></td>
+                  <td><?= esc($value['username']); ?></td>
+                  <td><b><?= esc($value['email']); ?></b></td>
                   <td>
                      <?php foreach (($value['groups'] ?? []) as $g): ?>
                         <?php
-                           $badge = match($g) {
-                              'superadmin' => 'danger',
-                              'admin'      => 'success',
-                              'kepsek'     => 'warning',
-                              'scanner'    => 'info',
-                              'guru'       => 'secondary',
-                              default      => 'secondary',
+                           $groupClean    = strtolower($g);
+                           $usernameLower = strtolower($value['username'] ?? '');
+
+                           // Deteksi otomatis akun Tendik berdasarkan Username, ID, atau Nama Tendik
+                           $isTendik = !empty($value['id_tendik']) || !empty($value['nama_tendik']) || str_contains($usernameLower, 'tendik');
+
+                           if ($isTendik && in_array($groupClean, ['guru', 'scanner', 'tendik'])) {
+                              $groupClean = 'tendik';
+                           }
+
+                           $badge = match($groupClean) {
+                              'superadmin'        => 'danger',
+                              'admin'             => 'success',
+                              'kepsek'            => 'warning',
+                              'tendik', 'scanner' => 'info',
+                              'guru'              => 'secondary',
+                              default             => 'secondary',
+                           };
+
+                           $roleLabel = match($groupClean) {
+                              'superadmin'        => 'Super Admin',
+                              'admin'             => 'Admin',
+                              'kepsek'            => 'Kepsek',
+                              'tendik', 'scanner' => 'Tendik',
+                              'guru'              => 'Guru',
+                              default             => function_exists('getUserRole') ? getUserRole($g) : ucfirst($g),
                            };
                         ?>
-                        <span class="h6 mr-1 my-auto badge badge-<?= $badge ?> text-capitalize"><?= getUserRole($g) ?></span>
+                        <span class="h6 mr-1 my-auto badge badge-<?= $badge ?> text-capitalize"><?= $roleLabel ?></span>
                      <?php endforeach; ?>
                      <?php if (!empty($value['is_wali_kelas'])): ?>
                         <span class="h6 mr-1 my-auto badge badge-primary text-capitalize">Wali Kelas</span>
                      <?php endif; ?>
                   </td>
-                  <td><?= $value['nama_guru'] ?? '-'; ?></td>
+                  
+                  <!-- TAMPILKAN NAMA GURU ATAU TENDIK -->
+                  <td>
+                     <?php 
+                        $usernameLower = strtolower($value['username'] ?? '');
+                        $isTendik      = !empty($value['id_tendik']) || !empty($value['nama_tendik']) || str_contains($usernameLower, 'tendik');
+
+                        if ($isTendik && !empty($value['nama_tendik'])) {
+                           $namaPegawai = $value['nama_tendik'];
+                        } elseif (!empty($value['nama_guru'])) {
+                           $namaPegawai = $value['nama_guru'];
+                        } else {
+                           $namaPegawai = $value['nama_tendik'] ?? $value['nama_guru'] ?? '-';
+                        }
+                        echo esc($namaPegawai);
+                     ?>
+                  </td>
+
                   <td>
                      <?php if (($value['active'] ?? 0) == 1): ?>
                         <span class="badge badge-success">Aktif</span>

@@ -155,6 +155,8 @@ $waktu == 'Masuk' ? $oppBtn = 'pulang' : $oppBtn = 'masuk';
    let audio = new Audio("<?= base_url('assets/audio/beep.mp3'); ?>");
    const codeReader = new ZXing.BrowserMultiFormatReader();
    const sourceSelect = $('#pilihKamera');
+let currentLatitude = null;
+let currentLongitude = null;
 
    $(document).on('change', '#pilihKamera', function () {
       selectedDeviceId = $(this).val();
@@ -227,28 +229,36 @@ $waktu == 'Masuk' ? $oppBtn = 'pulang' : $oppBtn = 'masuk';
             $('#previewKamera').removeClass('d-none');
             $('#searching').addClass('d-none');
 
-            codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'previewKamera')
-               .then(result => {
-                  console.log(result.text);
-                  cekData(result.text);
+         codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'previewKamera')
+    .then(result => {
 
-                  $('#previewKamera').addClass('d-none');
-                  $('#previewParent').addClass('unpreview');
-                  $('#searching').removeClass('d-none');
+        console.log(result.text);
 
-                  if (codeReader) {
-                     codeReader.reset();
+        getCurrentLocation(function () {
 
-                     // delay 2,5 detik setelah berhasil meng-scan
-                     setTimeout(() => {
-                        initScanner();
-                     }, 2500);
-                  }
-               })
-               .catch(err => console.warn(err));
+            // kirim QR + GPS ke server
+            cekData(result.text);
 
-         })
-         .catch(err => console.error(err));
+            $('#previewKamera').addClass('d-none');
+            $('#previewParent').addClass('unpreview');
+            $('#searching').removeClass('d-none');
+
+            if (codeReader) {
+                codeReader.reset();
+
+                // delay 2,5 detik setelah berhasil meng-scan
+                setTimeout(() => {
+                    initScanner();
+                }, 2500);
+            }
+
+        });
+
+    })
+    .catch(err => console.warn(err));
+
+})
+.catch(err => console.error(err));
    }
 
    if (navigator.mediaDevices) {
@@ -256,15 +266,71 @@ $waktu == 'Masuk' ? $oppBtn = 'pulang' : $oppBtn = 'masuk';
    } else {
       alert('Cannot access camera.');
    }
+function getCurrentLocation(callback) {
 
+    if (!navigator.geolocation) {
+        alert("Browser tidak mendukung GPS.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+
+        function(position){
+
+            currentLatitude = position.coords.latitude;
+            currentLongitude = position.coords.longitude;
+
+            callback();
+
+        },
+
+        function(error){
+
+            switch(error.code){
+
+                case error.PERMISSION_DENIED:
+                    alert("Izin lokasi ditolak.");
+                    break;
+
+                case error.POSITION_UNAVAILABLE:
+                    alert("Lokasi tidak tersedia.");
+                    break;
+
+                case error.TIMEOUT:
+                    alert("GPS timeout.");
+                    break;
+
+                default:
+                    alert("GPS gagal dibaca.");
+
+            }
+
+        },
+
+        {
+            enableHighAccuracy:true,
+            timeout:10000,
+            maximumAge:0
+        }
+
+    );
+
+}
    async function cekData(code) {
       jQuery.ajax({
          url: "<?= base_url('scan/cek'); ?>",
          type: 'post',
          data: setAjaxData({
-            'unique_code': code,
-            'waktu': '<?= strtolower($waktu); ?>'
-         }),
+
+    unique_code: code,
+
+    waktu: '<?= strtolower($waktu); ?>',
+
+    latitude: currentLatitude,
+
+    longitude: currentLongitude
+
+}),
          success: function (response, status, xhr) {
             audio.play();
             console.log(response);

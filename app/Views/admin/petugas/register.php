@@ -62,30 +62,48 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                                <!-- Pilih 3 Role Utama -->
+                                <div class="col-md-4">
                                     <div class="form-group mt-4">
                                         <label for="role">Role</label>
-                                        <select class="custom-select <?php if (session('errors.role')): ?>is-invalid<?php endif ?>" id="role" name="role">
+                                        <select class="custom-select <?php if (session('errors.role')): ?>is-invalid<?php endif ?>" id="role" name="role" required>
                                             <option value="">--Pilih role--</option>
-                                            <?php foreach ($roles as $role): ?>
-                                                <option value="<?= $role->value ?>" <?= old('role') == (string) $role->value ? 'selected' : ''; ?>>
-                                                    <?= $role->label() ?>
-                                                </option>
-                                            <?php endforeach; ?>
+                                            <option value="superadmin" <?= (old('role') == 'superadmin' || old('role') == '1') ? 'selected' : ''; ?>>Super Admin</option>
+                                            <option value="guru" <?= old('role') == 'guru' ? 'selected' : ''; ?>>Guru</option>
+                                            <option value="tendik" <?= (old('role') == 'tendik' || old('role') == '0') ? 'selected' : ''; ?>>Tendik</option>
                                         </select>
                                         <div class="invalid-feedback">
                                             <?= session('errors.role') ?>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+
+                                <!-- Dynamic Wrapper: Hubungkan ke Guru -->
+                                <div class="col-md-4" id="guru_wrapper" style="display: none;">
                                     <div class="form-group mt-4">
                                         <label for="id_guru">Hubungkan ke Guru (Opsional)</label>
                                         <select class="custom-select" id="id_guru" name="id_guru">
                                             <option value="">--Pilih Guru--</option>
-                                            <?php foreach ($guru as $g): ?>
-                                                <option value="<?= $g['id_guru']; ?>" <?= old('id_guru') == $g['id_guru'] ? 'selected' : ''; ?>><?= $g['nama_guru']; ?></option>
-                                            <?php endforeach; ?>
+                                            <?php if (!empty($guru)): ?>
+                                                <?php foreach ($guru as $g): ?>
+                                                    <option value="<?= $g['id_guru']; ?>" <?= old('id_guru') == $g['id_guru'] ? 'selected' : ''; ?>><?= $g['nama_guru']; ?></option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Dynamic Wrapper: Hubungkan ke Tendik -->
+                                <div class="col-md-4" id="tendik_wrapper" style="display: none;">
+                                    <div class="form-group mt-4">
+                                        <label for="id_tendik">Hubungkan ke Tendik (Opsional)</label>
+                                        <select class="custom-select" id="id_tendik" name="id_tendik">
+                                            <option value="">--Pilih Tendik--</option>
+                                            <?php if (!empty($tendik)): ?>
+                                                <?php foreach ($tendik as $t): ?>
+                                                    <option value="<?= $t['id_tendik']; ?>" <?= old('id_tendik') == $t['id_tendik'] ? 'selected' : ''; ?>><?= $t['nama_tendik']; ?></option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
                                         </select>
                                     </div>
                                 </div>
@@ -99,4 +117,21 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const roleSelect = document.getElementById('role');
+        const guruWrapper = document.getElementById('guru_wrapper');
+        const tendikWrapper = document.getElementById('tendik_wrapper');
+
+        function toggleDropdowns() {
+            const val = roleSelect.value;
+            guruWrapper.style.display = (val === 'guru') ? 'block' : 'none';
+            tendikWrapper.style.display = (val === 'tendik' || val === '0') ? 'block' : 'none';
+        }
+
+        roleSelect.addEventListener('change', toggleDropdowns);
+        toggleDropdowns(); // Jalankan saat pertama load halaman
+    });
+</script>
 <?= $this->endSection() ?>

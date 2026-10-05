@@ -7,7 +7,6 @@
             <div class="card">
                <div class="card-header card-header-success">
                   <h4 class="card-title"><b>Form Edit Guru</b></h4>
-
                </div>
                <div class="card-body mx-5 my-3">
 
@@ -32,7 +31,7 @@
                         <label for="nuptk">NUPTK</label>
                         <input type="text" id="nuptk"
                            class="form-control <?= $validation->getError('nuptk') ? 'is-invalid' : ''; ?>" name="nuptk"
-                           placeholder="1234" value="<?= old('nuptk') ?? $oldInput['nuptk'] ?? $data['nuptk'] ?>">
+                           placeholder="1234" value="<?= old('nuptk') ?? $oldInput['nuptk'] ?? $data['nuptk'] ?? '' ?>">
                         <div class="invalid-feedback">
                            <?= $validation->getError('nuptk'); ?>
                         </div>
@@ -42,22 +41,33 @@
                         <label for="nama">Nama Lengkap</label>
                         <input type="text" id="nama"
                            class="form-control <?= $validation->getError('nama') ? 'is-invalid' : ''; ?>" name="nama"
-                           placeholder="Your Name" value="<?= old('nama') ?? $oldInput['nama'] ?? $data['nama_guru'] ?>"
+                           placeholder="Nama Guru" value="<?= old('nama') ?? $oldInput['nama'] ?? $data['nama_guru'] ?? '' ?>"
                            required>
                         <div class="invalid-feedback">
                            <?= $validation->getError('nama'); ?>
                         </div>
                      </div>
 
+                     <!-- INPUT MATA PELAJARAN PENGAMPU -->
+                     <div class="form-group mt-4">
+                        <label for="mapel">Mata Pelajaran Pengampu</label>
+                        <input type="text" id="mapel"
+                           class="form-control <?= $validation->getError('mapel') ? 'is-invalid' : ''; ?>" name="mapel"
+                           placeholder="Contoh: Agama Kristen, Matematika, PJOK"
+                           value="<?= old('mapel') ?? $oldInput['mapel'] ?? $data['nama_mapel'] ?? $data['mapel'] ?? '' ?>">
+                        <div class="invalid-feedback">
+                           <?= $validation->getError('mapel'); ?>
+                        </div>
+                     </div>
+
                      <div class="form-group mt-2">
                         <label for="jk">Jenis Kelamin</label>
                         <?php
-                        $jenisKelamin = (old('jk') ?? $oldInput['jk'] ?? $data['jenis_kelamin']);
+                        $jenisKelamin = (old('jk') ?? $oldInput['jk'] ?? $data['jenis_kelamin'] ?? '');
                         $l = $jenisKelamin == 'Laki-laki' || $jenisKelamin == '1' ? 'checked' : '';
                         $p = $jenisKelamin == 'Perempuan' || $jenisKelamin == '2' ? 'checked' : '';
                         ?>
-                        <div
-                           class="form-check form-control pt-0 mb-1 <?= $validation->getError('jk') ? 'is-invalid' : ''; ?>">
+                        <div class="form-check form-control pt-0 mb-1 <?= $validation->getError('jk') ? 'is-invalid' : ''; ?>">
                            <div class="row">
                               <div class="col-auto">
                                  <div class="row">
@@ -66,7 +76,7 @@
                                     </div>
                                     <div class="col">
                                        <label class="form-check-label pl-0 pt-1" for="laki">
-                                          <h6 class="text-dark">Laki-laki</h5>
+                                          <h6 class="text-dark">Laki-laki</h6>
                                        </label>
                                     </div>
                                  </div>
@@ -93,14 +103,14 @@
                      <div class="form-group mt-4">
                         <label for="alamat">Alamat</label>
                         <input type="text" id="alamat" name="alamat" class="form-control"
-                           value="<?= old('alamat') ?? $oldInput['alamat'] ?? $data['alamat'] ?>">
+                           value="<?= old('alamat') ?? $oldInput['alamat'] ?? $data['alamat'] ?? '' ?>">
                      </div>
 
                      <div class="form-group mt-4">
                         <label for="hp">No HP</label>
                         <input type="number" id="hp" name="no_hp"
                            class="form-control <?= $validation->getError('no_hp') ? 'is-invalid' : ''; ?>"
-                           placeholder="08969xxx" value="<?= old('no_hp') ?? $oldInput['no_hp'] ?? $data['no_hp'] ?>"
+                           placeholder="08969xxx" value="<?= old('no_hp') ?? $oldInput['no_hp'] ?? $data['no_hp'] ?? '' ?>"
                            required>
                         <div class="invalid-feedback">
                            <?= $validation->getError('no_hp'); ?>
@@ -118,7 +128,7 @@
                         </div>
                      </div>
 
-                     <button type="submit" class="btn btn-success btn-block">Simpan</button>
+                     <button type="submit" class="btn btn-success btn-block mt-4">Simpan</button>
                   </form>
 
                   <hr>

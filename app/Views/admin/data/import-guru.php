@@ -1,173 +1,55 @@
 <?= $this->extend('templates/admin_page_layout') ?>
 <?= $this->section('content') ?>
-
 <div class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-12 col-md-12">
-                <?= view('admin/_messages'); ?>
-                <div class="row">
-                    <div class="col-12 col-xl-8">
-                        <div class="card">
-                            <div class="card-header card-header-tabs card-header-primary">
-                                <div class="nav-tabs-navigation">
-                                    <div class="row">
-                                        <div class="col-md-4 col-lg-5">
-                                            <h4 class="card-title"><b>Bulk Post Upload Guru</b></h4>
-                                            <p class="card-category">Import data guru dari CSV</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="form-group">
-                                    <div class="dm-uploader-container">
-                                        <div id="drag-and-drop-zone" class="dm-uploader p-2">
-                                            <p class="dm-upload-icon">
-                                                <i class="material-icons">cloud_upload</i>
-                                            </p>
-                                            <h3 class="text-muted">Drag &amp; drop files here</h3>
-                                            <div class="btn btn-primary mb-5">
-                                                <span>Open the file Browser</span>
-                                                <input type="file" title='Click to add Files' />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12">
-                                        <div class="row">
-                                            <div id="csv_upload_spinner" class="csv-upload-spinner">
-                                                <strong class="text-csv-importing">Importing Guru...</strong>
-                                                <strong class="text-csv-import-completed">completed!</strong>
-                                                <div class="spinner-bounce">
-                                                    <div class="bounce1"></div>
-                                                    <div class="bounce2"></div>
-                                                    <div class="bounce3"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12">
-                                        <div class="row">
-                                            <div class="csv-uploaded-files-container">
-                                                <ul id="csv_uploaded_files" class="list-group csv-uploaded-files"></ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+   <div class="container-fluid">
+      <div class="row">
+         <div class="col-lg-12 col-md-12">
+            <div class="card">
+               <div class="card-header card-header-success">
+                  <h4 class="card-title"><b>Import Data Guru (Excel / CSV)</b></h4>
+               </div>
+               <div class="card-body mx-5 my-3">
+
+                  <?php if (session()->getFlashdata('msg')): ?>
+                     <div class="pb-2">
+                        <div class="alert alert-<?= session()->getFlashdata('error') == true ? 'danger' : 'success' ?> ">
+                           <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                              <i class="material-icons">close</i>
+                           </button>
+                           <?= session()->getFlashdata('msg') ?>
                         </div>
-                    </div>
-                    <div class="col-12 col-xl-4">
-                        <div class="card">
-                            <div class="card-header card-header-tabs card-header-primary">
-                                <h4 class="card-title"><b>Help Documents</b></h4>
-                                <p class="card-category">documents to generate your CSV file</p>
-                            </div>
-                            <div class="card-body">
-                                <form action="<?= base_url('admin/guru/downloadCSVFilePost'); ?>" method="post">
-                                    <?= csrf_field(); ?>
-                                    <button class="btn btn-success btn-block" name="submit"
-                                        value="csv_guru_template">Download CSV Template</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                     </div>
+                  <?php endif; ?>
+
+                  <form action="<?= base_url('admin/guru/importCSVItemPost'); ?>" method="post" enctype="multipart/form-data">
+                     <?= csrf_field() ?>
+
+                     <div class="form-group mt-4">
+                        <label for="file_csv" class="font-weight-bold text-dark">Pilih File Excel / CSV (.xlsx, .xls, .csv)</label>
+                        <input type="file" id="file_csv" name="file_csv" class="form-control-file mt-2" accept=".csv, .xls, .xlsx, .txt, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                     </div>
+
+                     <div class="alert alert-info mt-4">
+                        <b>Ketentuan Impor Data Guru:</b>
+                        <ul class="mb-0 pl-3">
+                           <li>Format yang didukung: <b>Excel (.xlsx / .xls)</b> dan <b>CSV (.csv)</b>.</li>
+                           <li>Header kolom yang disarankan: <code>NUPTK</code>, <code>Nama</code>, <code>Mapel</code>, <code>Jenis Kelamin</code>, <code>No HP</code>, <code>Alamat</code>.</li>
+                           <li>Jika ada sel/kolom data yang tidak diisi, sistem akan memberikan tanda default agar data tetap berhasil masuk dan bisa Anda lengkapi secara manual lewat menu Edit.</li>
+                           <li>Data dengan <b>NUPTK yang sudah terdaftar akan otomatis dilewati</b> agar tidak ada duplikasi data.</li>
+                        </ul>
+                     </div>
+
+                     <div class="d-flex justify-content-between mt-4">
+                        <a href="<?= base_url('admin/guru'); ?>" class="btn btn-secondary">Kembali</a>
+                        <button type="submit" class="btn btn-success font-weight-bold">Proses & Import Data</button>
+                     </div>
+                  </form>
+
+                  <hr>
+               </div>
             </div>
-        </div>
-    </div>
+         </div>
+      </div>
+   </div>
 </div>
-
-<?= $this->endSection() ?>
-
-<?= $this->section('scripts') ?>
-<script>
-    $(function () {
-        $('#drag-and-drop-zone').dmUploader({
-            url: '<?= base_url("admin/guru/generateCSVObjectPost"); ?>',
-            multiple: false,
-            extFilter: ["csv"],
-            extraData: function (id) {
-                return {
-                    '<?= csrf_token() ?>': '<?= csrf_hash(); ?>'
-                };
-            },
-            onDragEnter: function () {
-                this.addClass('active');
-            },
-            onDragLeave: function () {
-                this.removeClass('active');
-            },
-            onNewFile: function (id, file) {
-                $("#csv_upload_spinner").show();
-                $("#csv_upload_spinner .spinner-bounce").show();
-                $("#csv_upload_spinner .text-csv-importing").show();
-                $("#csv_upload_spinner .text-csv-import-completed").hide();
-                $("#csv_uploaded_files").empty();
-            },
-            onUploadSuccess: function (id, response) {
-                var numberOfItems = 0;
-                var txtFileName = "";
-                try {
-                    var obj = JSON.parse(response);
-                    if (obj.result == 1) {
-                        numberOfItems = obj.numberOfItems;
-                        txtFileName = obj.txtFileName;
-                        if (numberOfItems > 0) {
-                            addCSVItem(numberOfItems, txtFileName, 1);
-                        } else {
-                            $("#csv_upload_spinner").hide();
-                        }
-                    } else {
-                        $("#csv_upload_spinner").hide();
-                    }
-
-                } catch (e) {
-                    alert("Invalid CSV file! Make sure there are no double quotes in your content. Double quotes can brake the CSV structure.");
-                }
-            }
-        });
-    });
-
-    function addCSVItem(numberOfItems, txtFileName, index) {
-        if (index <= numberOfItems) {
-            var data = {
-                'txtFileName': txtFileName,
-                'index': index
-            };
-            $.ajax({
-                type: "POST",
-                url: '<?= base_url("admin/guru/importCSVItemPost"); ?>',
-                data: setAjaxData(data),
-                success: function (response) {
-                    var objSub = JSON.parse(response);
-                    if (objSub.result == 1) {
-                        $("#csv_uploaded_files").prepend('<li class="list-group-item list-group-item-success">&nbsp;' + objSub.index + '.&nbsp;' + objSub.guru.nuptk + '.&nbsp; - ' + objSub.guru.nama_guru + '</li>');
-                    } else {
-                        var msg = objSub.message ? objSub.message : '(Gagal)';
-                        var cssClass = objSub.result == 2 ? 'list-group-item-warning' : 'list-group-item-danger';
-                        $("#csv_uploaded_files").prepend('<li class="list-group-item ' + cssClass + '">&nbsp;' + objSub.index + '. ' + msg + '</li>');
-                    }
-                    if (objSub.index == numberOfItems) {
-                        $("#csv_upload_spinner .text-csv-importing").hide();
-                        $("#csv_upload_spinner .spinner-bounce").hide();
-                        $("#csv_upload_spinner .text-csv-import-completed").css('display', 'block');
-                    }
-                    index = index + 1;
-                    addCSVItem(numberOfItems, txtFileName, index);
-                },
-                error: function (xhr, status, thrown) {
-                    swal({
-                        text: 'Ada Kesalahan Pada CSV silahkan Cek Log',
-                        icon: "warning"
-                    }).then(function (willDelete) {
-                        if (willDelete) {
-                            location.reload();
-                        }
-                    });
-                },
-            });
-        }
-    }
-</script>
 <?= $this->endSection() ?>

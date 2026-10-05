@@ -3,44 +3,87 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
-use App\Models\GeneralSettingsModel;
 
 class GeneralSettings extends BaseController
 {
-    protected $generalSettingsModel;
-
-    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
-    {
-        parent::initController($request, $response, $logger);
-        $this->generalSettingsModel = new GeneralSettingsModel();
-    }
-
+    // Fungsi untuk menampilkan halaman
     public function index()
     {
-        $data['title'] = 'Pengaturan Utama';
-        $data['ctx'] = 'general_settings';
+        $db = \Config\Database::connect();
+        $tableName = $db->tableExists('general_settings') ? 'general_settings' : 'tb_pengaturan';
+        
+        $generalSettings = $db->table($tableName)->get()->getFirstRow();
 
-        return view('admin/general-settings/index', $data);
+        $data = [
+            'title'           => 'Pengaturan Utama',
+            'generalSettings' => $generalSettings
+        ];
+
+        return view('admin/general_settings', $data);
     }
 
+    // Fungsi untuk memproses penyimpanan (NAMA FUNGSI INI YANG DICARI SISTEM ANDA)
     public function generalSettingsPost()
     {
-        $val = \Config\Services::validation();
-        $val->setRule('school_name', 'Nama Sekolah', 'required|max_length[200]');
-        $val->setRule('school_year', 'Tahun Ajaran', 'required|max_length[200]');
-        $val->setRule('hari_kerja', 'Hari Kerja', 'required');
-        $val->setRule('copyright', 'copyright', 'max_length[200]');
+        $db = \Config\Database::connect();
+        $tableName = $db->tableExists('general_settings') ? 'general_settings' : 'tb_pengaturan';
 
-        if (!$this->validate(getValRules($val))) {
-            $this->session->setFlashdata('errors', $val->getErrors());
-            return redirect()->to('admin/general-settings')->withInput();
-        } else {
-            if ($this->generalSettingsModel->updateSettings()) {
-                $this->session->setFlashdata('success', 'Data berhasil diubah');
-            } else {
-                $this->session->setFlashdata('error', 'Error data!');
-            }
+        // Cek & Buat Kolom 'logo' otomatis jika belum ada di database
+        if (!$db->fieldExists('logo', $tableName)) {
+            $forge = \Config\Database::forge();
+            $forge->addColumn($tableName, [
+                'logo' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true]
+            ]);
         }
-        return redirect()->to('admin/general-settings');
+
+        $builder = $db->table($tableName);
+
+        // Ambil Input Text Form
+        $data = [
+            'school_name'         => $this->request->getPost('school_name'),
+            'school_year'         => $this->request->getPost('school_year'),
+            'jam_masuk_limit'     => $this->request->getPost('jam_masuk_limit'),
+            'jam_pulang_standard' => $this->request->getPost('jam_pulang_standard'),
+            'latitude'            => $this->request->getPost('latitude'),
+            'longitude'           => $this->request->getPost('longitude'),
+            'radius'              => $this->request->getPost('radius'),
+            'copyright'           => $this->request->getPost('copyright'),
+        ];
+
+        // Olah Hari Kerja (Checkbox ke bentuk teks dipisah koma)
+        $hariKerjaArr = $this->request->getPost('hari_kerja');
+        $data['hari_kerja'] = is_array($hariKerjaArr) ? implode(',', $hariKerjaArr) : '';
+
+        // Olah File Gambar Logo
+        $fileLogo = $this->request->getFile('logo');
+        if ($fileLogo && $fileLogo->isValid() && !$fileLogo->hasMoved()) {
+            $newName = $fileLogo->getRandomName();
+            $uploadPath = FCPATH . 'uploads/logo';
+            
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            
+            $fileLogo->move($uploadPath, $newName);
+            $data['logo'] = $newName; 
+        }
+
+        // Simpan Ke Database
+        try {
+            $existing = $builder->get()->getFirstRow('array');
+
+            if ($existing) {
+                // Ambil Kunci Utama (Primary Key) dari kolom pertama secara dinamis
+                $primaryKey = array_key_first($existing);
+                $builder->where($primaryKey, $existing[$primaryKey])->update($data);
+            } else {
+                $builder->insert($data);
+            }
+
+            return redirect()->to(base_url('admin/general-settings'))->with('message', 'Pengaturan & Logo Sekolah berhasil disimpan!');
+
+        } catch (\Exception $e) {
+            return redirect()->to(base_url('admin/general-settings'))->with('error', 'Gagal menyimpan: ' . $e->getMessage());
+        }
     }
 }

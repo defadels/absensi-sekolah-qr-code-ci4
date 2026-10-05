@@ -5,193 +5,181 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 
 use App\Models\GuruModel;
-use App\Models\JurusanModel;
-use App\Models\SiswaModel;
-use App\Models\KelasModel;
+use App\Models\TendikModel;
+use App\Models\JabatanModel; // <-- Tambah Model Jabatan
+use App\Models\MapelModel;   // <-- Tambah Model Mapel
 use App\Models\PetugasModel;
 use App\Models\PresensiGuruModel;
-use App\Models\PresensiSiswaModel;
+use App\Models\PresensiTendikModel;
 use CodeIgniter\I18n\Time;
 
 class Dashboard extends BaseController
 {
-   protected SiswaModel $siswaModel;
-   protected GuruModel $guruModel;
+    protected TendikModel $tendikModel;
+    protected GuruModel $guruModel;
 
-   protected KelasModel $kelasModel;
-   protected JurusanModel $jurusanModel;
+    protected JabatanModel $jabatanModel; // <-- Ubah Kelas ke Jabatan
+    protected MapelModel $mapelModel;     // <-- Ubah Jurusan ke Mapel
 
-   protected PresensiSiswaModel $presensiSiswaModel;
-   protected PresensiGuruModel $presensiGuruModel;
+    protected PresensiTendikModel $presensiTendikModel;
+    protected PresensiGuruModel $presensiGuruModel;
 
-   protected PetugasModel $petugasModel;
+    protected PetugasModel $petugasModel;
 
-   public function __construct()
-   {
-      $this->siswaModel = new SiswaModel();
-      $this->guruModel = new GuruModel();
-      $this->kelasModel = new KelasModel();
-      $this->jurusanModel = new JurusanModel();
-      $this->presensiSiswaModel = new PresensiSiswaModel();
-      $this->presensiGuruModel = new PresensiGuruModel();
-      $this->petugasModel = new PetugasModel();
-   }
+    public function __construct()
+    {
+        $this->tendikModel         = new TendikModel();
+        $this->guruModel           = new GuruModel();
+        $this->jabatanModel        = new JabatanModel(); // <-- Inisialisasi Jabatan
+        $this->mapelModel          = new MapelModel();   // <-- Inisialisasi Mapel
+        $this->presensiTendikModel = new PresensiTendikModel();
+        $this->presensiGuruModel   = new PresensiGuruModel();
+        $this->petugasModel        = new PetugasModel();
+    }
 
-   public function index()
-   {
-      $now = Time::now();
+    public function index()
+    {
+        $now = Time::now();
 
-      $dateRange = [];
-      $chartLabelColors = [];
-      $holidayModel = new \App\Models\HariLiburModel();
-      for ($i = 6; $i >= 0; $i--) {
-         $date = $now->subDays($i)->toDateString();
-         $isHoliday = $holidayModel->isHoliday($date);
-         if ($i == 0) {
-            $formattedDate = "Hari ini";
-         } else {
-            $t = $now->subDays($i);
-            $formattedDate = "{$t->getDay()} " . substr($t->toFormattedDateString(), 0, 3);
-         }
-         array_push($dateRange, $formattedDate);
-         array_push($chartLabelColors, $isHoliday ? '#f44336' : '#333');
-      }
+        $dateRange = [];
+        $chartLabelColors = [];
+        $holidayModel = new \App\Models\HariLiburModel();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $now->subDays($i)->toDateString();
+            $isHoliday = $holidayModel->isHoliday($date);
+            if ($i == 0) {
+                $formattedDate = "Hari ini";
+            } else {
+                $t = $now->subDays($i);
+                $formattedDate = "{$t->getDay()} " . substr($t->toFormattedDateString(), 0, 3);
+            }
+            array_push($dateRange, $formattedDate);
+            array_push($chartLabelColors, $isHoliday ? '#f44336' : '#333');
+        }
 
-      $today = $now->toDateString();
-      
-      $jamPulangStandard = $this->generalSettings->jam_pulang_standard ?? '14:00:00';
-      $isAfterSchool = $now->toTimeString() > $jamPulangStandard;
+        $today = $now->toDateString();
+        
+        $jamPulangStandard = $this->generalSettings->jam_pulang_standard ?? '14:00:00';
+        $isAfterSchool = $now->toTimeString() > $jamPulangStandard;
 
-      // Get attendance trends using new methods
-      $grafikKehadiranSiswa = $this->presensiSiswaModel->getAttendanceTrend();
-      $grafikKehadiranGuru = $this->presensiGuruModel->getAttendanceTrend();
+        // Mendapatkan tren kehadiran Guru dan Tendik
+        $grafikKehadiranTendik = method_exists($this->presensiTendikModel, 'getAttendanceTrend') 
+            ? $this->presensiTendikModel->getAttendanceTrend() 
+            : [];
+        $grafikKehadiranGuru   = method_exists($this->presensiGuruModel, 'getAttendanceTrend') 
+            ? $this->presensiGuruModel->getAttendanceTrend() 
+            : [];
 
-      // Prepare kelas data with student count
-      $kelasData = $this->kelasModel->getDataKelas();
-      foreach ($kelasData as &$k) {
-         $k['jumlah_siswa'] = $this->siswaModel->getSiswaCountByKelas($k['id_kelas']);
-      }
+        $data = [
+            'title' => 'Dashboard',
+            'ctx'   => 'admin-dashboard',
 
-      $data = [
-         'title' => 'Dashboard',
-         'ctx' => 'admin-dashboard',
+            'tendik' => $this->tendikModel->findAll(),
+            'guru'   => $this->guruModel->findAll(),
 
-         'siswa' => $this->siswaModel->getAllSiswaWithKelas(),
-         'guru' => $this->guruModel->getAllGuru(),
+            // Kirim data Jabatan dan Mapel ke View
+            'jabatan' => $this->jabatanModel->findAll(),
+            'mapel'   => $this->mapelModel->findAll(),
 
-         'kelas' => $kelasData,
-         'jurusan' => $this->jurusanModel->getDataJurusan(),
+            'dateRange'        => $dateRange,
+            'chartLabelColors' => $chartLabelColors,
+            'dateNow'          => $now->toLocalizedString('d MMMM Y'),
 
-         'dateRange' => $dateRange,
-         'chartLabelColors' => $chartLabelColors,
-         'dateNow' => $now->toLocalizedString('d MMMM Y'),
+            'grafikKehadiranTendik' => $grafikKehadiranTendik,
+            'grafikKehadiranGuru'   => $grafikKehadiranGuru,
 
-         'grafikKehadiranSiswa' => $grafikKehadiranSiswa,
-         'grafikKehadiranGuru' => $grafikKehadiranGuru,
+            'jumlahKehadiranTendik' => [
+                'hadir' => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('1', $today)) : 0,
+                'sakit' => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('2', $today)) : 0,
+                'izin'  => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('3', $today)) : 0,
+                'alfa'  => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('4', $today)) : 0,
+            ],
 
-         'jumlahKehadiranSiswa' => [
-            'hadir' => count($this->presensiSiswaModel->getPresensiByKehadiran('1', $today)),
-            'sakit' => count($this->presensiSiswaModel->getPresensiByKehadiran('2', $today)),
-            'izin' => count($this->presensiSiswaModel->getPresensiByKehadiran('3', $today)),
-            'alfa' => count($this->presensiSiswaModel->getPresensiByKehadiran('4', $today))
-         ],
+            'jumlahKehadiranGuru' => [
+                'hadir' => method_exists($this->presensiGuruModel, 'getPresensiByKehadiran') ? count($this->presensiGuruModel->getPresensiByKehadiran('1', $today)) : 0,
+                'sakit' => method_exists($this->presensiGuruModel, 'getPresensiByKehadiran') ? count($this->presensiGuruModel->getPresensiByKehadiran('2', $today)) : 0,
+                'izin'  => method_exists($this->presensiGuruModel, 'getPresensiByKehadiran') ? count($this->presensiGuruModel->getPresensiByKehadiran('3', $today)) : 0,
+                'alfa'  => method_exists($this->presensiGuruModel, 'getPresensiByKehadiran') ? count($this->presensiGuruModel->getPresensiByKehadiran('4', $today)) : 0,
+            ],
 
-         'jumlahKehadiranGuru' => [
-            'hadir' => count($this->presensiGuruModel->getPresensiByKehadiran('1', $today)),
-            'sakit' => count($this->presensiGuruModel->getPresensiByKehadiran('2', $today)),
-            'izin' => count($this->presensiGuruModel->getPresensiByKehadiran('3', $today)),
-            'alfa' => count($this->presensiGuruModel->getPresensiByKehadiran('4', $today))
-         ],
+            'totalTendik' => $this->tendikModel->countAllResults(),
+            'totalGuru'   => $this->guruModel->countAllResults(),
 
-         'totalSiswa' => $this->siswaModel->getSiswaCountByKelas(),
-         'totalGuru' => $this->guruModel->countAllResults(),
+            'petugas' => $this->petugasModel->findAll(),
+        ];
 
-         'petugas' => $this->petugasModel->getAllPetugas(),
-         
-         'topLateStudents' => $this->siswaModel->select('tb_siswa.*, tb_kelas.tingkat, tb_kelas.index_kelas, tb_jurusan.jurusan')
-            ->join('tb_kelas', 'tb_kelas.id_kelas = tb_siswa.id_kelas')
-            ->join('tb_jurusan', 'tb_jurusan.id = tb_kelas.id_jurusan')
-            ->where('poin_pelanggaran >', 0)
-            ->orderBy('poin_pelanggaran', 'DESC')
-            ->limit(5)
-            ->get()->getResultArray(),
+        return view('admin/dashboard', $data);
+    }
 
-         'absenteeAlerts' => $this->presensiSiswaModel->getConsecutiveAbsences(3),
-      ];
+    public function auditLog()
+    {
+        $auditLogModel = new \App\Models\AuditLogModel();
+        $data = [
+            'title' => 'Audit Log - Riwayat Perubahan',
+            'ctx'   => 'audit-log',
+            'logs'  => method_exists($auditLogModel, 'getLogs') ? $auditLogModel->getLogs() : $auditLogModel->findAll()
+        ];
+        return view('admin/audit_log', $data);
+    }
 
-      return view('admin/dashboard', $data);
-   }
+    public function getLiveStats()
+    {
+        $now   = Time::now();
+        $today = $now->toDateString();
 
-   public function auditLog()
-   {
-      $auditLogModel = new \App\Models\AuditLogModel();
-      $data = [
-         'title' => 'Audit Log - Riwayat Perubahan',
-         'ctx' => 'audit-log',
-         'logs' => $auditLogModel->getLogs()
-      ];
-      return view('admin/audit_log', $data);
-   }
+        $jumlahKehadiranTendik = [
+            'hadir' => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('1', $today)) : 0,
+            'sakit' => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('2', $today)) : 0,
+            'izin'  => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('3', $today)) : 0,
+            'alfa'  => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('4', $today)) : 0,
+        ];
 
-   public function getLiveStats()
-   {
-      $now = Time::now();
-      $today = $now->toDateString();
-      $idKelas = $this->request->getGet('id_kelas');
+        $totalTendik = $this->tendikModel->countAllResults();
+        
+        $jamPulangStandard = $this->generalSettings->jam_pulang_standard ?? '14:00:00';
+        $isAfterSchool     = $now->toTimeString() > $jamPulangStandard;
 
-      $jumlahKehadiranSiswa = [
-         'hadir' => count($this->presensiSiswaModel->getPresensiByKehadiran('1', $today, $idKelas)),
-         'sakit' => count($this->presensiSiswaModel->getPresensiByKehadiran('2', $today, $idKelas)),
-         'izin' => count($this->presensiSiswaModel->getPresensiByKehadiran('3', $today, $idKelas)),
-         'alfa' => count($this->presensiSiswaModel->getPresensiByKehadiran('4', $today, $idKelas))
-      ];
+        return $this->response->setJSON([
+            'stats'         => $jumlahKehadiranTendik,
+            'totalTendik'   => $totalTendik,
+            'isAfterSchool' => $isAfterSchool,
+            'lastUpdate'    => $now->toTimeString()
+        ]);
+    }
 
-      $totalSiswa = $this->siswaModel->getSiswaCountByKelas($idKelas);
-      
-      $jamPulangStandard = $this->generalSettings->jam_pulang_standard ?? '14:00:00';
-      $isAfterSchool = $now->toTimeString() > $jamPulangStandard;
+    public function filterData()
+    {
+        $now   = Time::now();
+        $today = $now->toDateString();
 
-      return $this->response->setJSON([
-         'stats' => $jumlahKehadiranSiswa,
-         'totalSiswa' => $totalSiswa,
-         'isAfterSchool' => $isAfterSchool,
-         'lastUpdate' => $now->toTimeString()
-      ]);
-   }
+        // Statistik Tendik
+        $jumlahKehadiranTendik = [
+            'hadir' => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('1', $today)) : 0,
+            'sakit' => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('2', $today)) : 0,
+            'izin'  => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('3', $today)) : 0,
+            'alfa'  => method_exists($this->presensiTendikModel, 'getPresensiByKehadiran') ? count($this->presensiTendikModel->getPresensiByKehadiran('4', $today)) : 0,
+        ];
 
-   public function filterData()
-   {
-      $idKelas = $this->request->getPost('id_kelas');
-      $now = Time::now();
-      $today = $now->toDateString();
+        // Grafik Tendik (7 Hari)
+        $grafikKehadiranTendik = method_exists($this->presensiTendikModel, 'getAttendanceTrend') 
+            ? $this->presensiTendikModel->getAttendanceTrend(7) 
+            : [];
 
-      // Statistik Siswa
-      $jumlahKehadiranSiswa = [
-         'hadir' => count($this->presensiSiswaModel->getPresensiByKehadiran('1', $today, $idKelas)),
-         'sakit' => count($this->presensiSiswaModel->getPresensiByKehadiran('2', $today, $idKelas)),
-         'izin' => count($this->presensiSiswaModel->getPresensiByKehadiran('3', $today, $idKelas)),
-         'alfa' => count($this->presensiSiswaModel->getPresensiByKehadiran('4', $today, $idKelas))
-      ];
+        $totalTendik = $this->tendikModel->countAllResults();
 
-      // Grafik Siswa (7 Hari) - using getAttendanceTrend
-      $grafikKehadiranSiswa = $this->presensiSiswaModel->getAttendanceTrend(7, $idKelas ?: null);
+        $data = [
+            'hadir'       => $jumlahKehadiranTendik['hadir'],
+            'sakit'       => $jumlahKehadiranTendik['sakit'],
+            'izin'        => $jumlahKehadiranTendik['izin'],
+            'alfa'        => $jumlahKehadiranTendik['alfa'],
+            'totalTendik' => $totalTendik,
+        ];
 
-      // Jumlah siswa per kelas
-      $jumlahSiswa = $this->siswaModel->getSiswaCountByKelas($idKelas);
-
-      $data = [
-         'hadir' => $jumlahKehadiranSiswa['hadir'],
-         'sakit' => $jumlahKehadiranSiswa['sakit'],
-         'izin' => $jumlahKehadiranSiswa['izin'],
-         'alfa' => $jumlahKehadiranSiswa['alfa'],
-         'totalSiswa' => $jumlahSiswa,
-      ];
-
-      return $this->response->setJSON([
-         'result' => 1,
-         'htmlContent' => view('admin/_dashboard_siswa_stats', $data),
-         'chartData' => $grafikKehadiranSiswa,
-         'totalSiswa' => $jumlahSiswa
-      ]);
-   }
+        return $this->response->setJSON([
+            'result'      => 1,
+            'htmlContent' => view('admin/_dashboard_tendik_stats', $data),
+            'chartData'   => $grafikKehadiranTendik,
+            'totalTendik' => $totalTendik
+        ]);
+    }
 }

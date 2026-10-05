@@ -3,53 +3,36 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
-
 use App\Models\GuruModel;
-use App\Models\KelasModel;
-use App\Models\SiswaModel;
+use App\Models\TendikModel;
 
 class GenerateQR extends BaseController
 {
-   protected SiswaModel $siswaModel;
-   protected KelasModel $kelasModel;
-
    protected GuruModel $guruModel;
+   protected TendikModel $tendikModel;
 
    public function __construct()
    {
-      $this->siswaModel = new SiswaModel();
-      $this->kelasModel = new KelasModel();
-
       $this->guruModel = new GuruModel();
+      $this->tendikModel = new TendikModel();
    }
 
    public function index()
    {
-      if (!can_view_report()) {
+      if (function_exists('can_view_report') && !can_view_report()) {
          return redirect()->to('admin');
       }
 
-      $siswa = $this->siswaModel->getAllSiswaWithKelas();
-      $kelas = $this->kelasModel->getDataKelas();
-      $guru = $this->guruModel->getAllGuru();
+      $guru   = $this->guruModel->getAllGuru();
+      $tendik = $this->tendikModel->getAllTendik();
 
       $data = [
-         'title' => 'Generate QR Code',
-         'ctx' => 'admin-qr',
-         'siswa' => $siswa,
-         'kelas' => $kelas,
-         'guru' => $guru
+         'title'  => 'Generate QR Code',
+         'ctx'    => 'admin-qr',
+         'guru'   => $guru,
+         'tendik' => $tendik
       ];
 
       return view('admin/generate-qr/generate-qr', $data);
-   }
-
-   public function getSiswaByKelas()
-   {
-      $idKelas = $this->request->getVar('idKelas');
-
-      $siswa = $this->siswaModel->getSiswaByKelas($idKelas);
-
-      return $this->response->setJSON($siswa);
    }
 }

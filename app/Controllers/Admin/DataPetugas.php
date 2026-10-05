@@ -3,16 +3,17 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
-
 use App\Models\PetugasModel;
+use App\Models\GuruModel;
+use App\Models\TendikModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
-
 use App\Libraries\enums\UserRole;
 
 class DataPetugas extends BaseController
 {
    protected PetugasModel $petugasModel;
-   protected \App\Models\GuruModel $guruModel;
+   protected GuruModel $guruModel;
+   protected TendikModel $tendikModel;
    protected \App\Models\UploadModel $uploadModel;
 
    protected $petugasValidationRules = [
@@ -41,12 +42,12 @@ class DataPetugas extends BaseController
       ]
    ];
 
-
    public function __construct()
    {
       $this->petugasModel = new PetugasModel();
-      $this->guruModel = new \App\Models\GuruModel();
-      $this->uploadModel = new \App\Models\UploadModel();
+      $this->guruModel    = new GuruModel();
+      $this->tendikModel  = new TendikModel();
+      $this->uploadModel  = new \App\Models\UploadModel();
    }
 
    public function index()
@@ -57,7 +58,7 @@ class DataPetugas extends BaseController
 
       $data = [
          'title' => 'Data Petugas',
-         'ctx' => 'petugas'
+         'ctx'   => 'petugas'
       ];
 
       return view('admin/petugas/data-petugas', $data);
@@ -68,7 +69,7 @@ class DataPetugas extends BaseController
       $petugas = $this->petugasModel->getAllPetugas();
 
       $data = [
-         'data' => $petugas,
+         'data'  => $petugas,
          'empty' => empty($petugas)
       ];
 
@@ -82,10 +83,11 @@ class DataPetugas extends BaseController
       }
 
       $data = [
-         'title' => 'Register Petugas',
-         'ctx' => 'petugas',
-         'guru' => $this->guruModel->getAllGuru(),
-         'roles' => UserRole::ALL_ROLES
+         'title'  => 'Register Petugas',
+         'ctx'    => 'petugas',
+         'guru'   => $this->guruModel->getAllGuru(),
+         'tendik' => $this->tendikModel->getAllTendik(),
+         'roles'  => UserRole::ALL_ROLES
       ];
 
       return view('admin/petugas/register', $data);
@@ -97,7 +99,6 @@ class DataPetugas extends BaseController
          return redirect()->to('admin');
       }
 
-      // Shield stores email in auth_identities.secret, not users.email
       $this->petugasValidationRules['email']['rules'] .= '|is_unique[auth_identities.secret]';
       $this->petugasValidationRules['username']['rules'] .= '|is_unique[users.username]';
       $this->petugasValidationRules['password']['rules'] = 'required|min_length[6]';
@@ -106,26 +107,32 @@ class DataPetugas extends BaseController
          return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
       }
 
-      $email = $this->request->getVar('email');
-      $username = $this->request->getVar('username');
-      $password = $this->request->getVar('password');
-      $role = $this->request->getVar('role');
-      $id_guru = $this->request->getVar('id_guru') ?: null;
+      $email     = $this->request->getVar('email');
+      $username  = $this->request->getVar('username');
+      $password  = $this->request->getVar('password');
+      $role      = $this->request->getVar('role');
+      $id_guru   = $this->request->getVar('id_guru') ?: null;
+      $id_tendik = $this->request->getVar('id_tendik') ?: null;
 
-      $result = $this->petugasModel->savePetugas(null, $email, $username, $password, $role, $id_guru, 1);
+      if ($role === 'scanner') {
+         $role = 'tendik';
+      }
+
+      // Validasi penyesuaian Role otomatis berdasarkan identitas pegawainya
+      if (!empty($id_tendik) && empty($id_guru) && $role === 'guru') {
+         $role = 'tendik';
+      } elseif (!empty($id_guru) && empty($id_tendik) && $role === 'tendik') {
+         $role = 'guru';
+      }
+
+      $result = $this->petugasModel->savePetugas(null, $email, $username, $password, $role, $id_guru, 1, $id_tendik);
 
       if ($result) {
-         session()->setFlashdata([
-            'msg' => 'Registrasi petugas berhasil',
-            'error' => false
-         ]);
+         session()->setFlashdata(['msg' => 'Registrasi petugas berhasil', 'error' => false]);
          return redirect()->to('/admin/petugas');
       }
 
-      session()->setFlashdata([
-         'msg' => 'Gagal registrasi petugas',
-         'error' => true
-      ]);
+      session()->setFlashdata(['msg' => 'Gagal registrasi petugas', 'error' => true]);
       return redirect()->back()->withInput();
    }
 
@@ -142,11 +149,12 @@ class DataPetugas extends BaseController
       }
 
       $data = [
-         'data' => $petugas,
-         'ctx' => 'petugas',
-         'title' => 'Edit Data Petugas',
-         'guru' => $this->guruModel->getAllGuru(),
-         'roles' => UserRole::ALL_ROLES
+         'data'   => $petugas,
+         'ctx'    => 'petugas',
+         'title'  => 'Edit Data Petugas',
+         'guru'   => $this->guruModel->getAllGuru(),
+         'tendik' => $this->tendikModel->getAllTendik(),
+         'roles'  => UserRole::ALL_ROLES
       ];
 
       return view('admin/petugas/edit-data-petugas', $data);
@@ -158,8 +166,7 @@ class DataPetugas extends BaseController
          return redirect()->to('admin');
       }
 
-      $idPetugas = $this->request->getVar('id');
-
+      $idPetugas   = $this->request->getVar('id');
       $petugasLama = $this->petugasModel->getPetugasById($idPetugas);
 
       if ($petugasLama['username'] != $this->request->getVar('username')) {
@@ -170,26 +177,37 @@ class DataPetugas extends BaseController
          $this->petugasValidationRules['email']['rules'] = 'required|is_unique[auth_identities.secret]';
       }
 
-      // validasi
       if (!$this->validate($this->petugasValidationRules)) {
          $data = [
-            'data' => $this->petugasModel->getPetugasById($idPetugas),
-            'ctx' => 'petugas',
-            'title' => 'Edit Data Petugas',
+            'data'       => $this->petugasModel->getPetugasById($idPetugas),
+            'ctx'        => 'petugas',
+            'title'      => 'Edit Data Petugas',
             'validation' => $this->validator,
-            'oldInput' => $this->request->getVar(),
-            'guru' => $this->guruModel->getAllGuru(),
-            'roles' => UserRole::ALL_ROLES
+            'oldInput'   => $this->request->getVar(),
+            'guru'       => $this->guruModel->getAllGuru(),
+            'tendik'     => $this->tendikModel->getAllTendik(),
+            'roles'      => UserRole::ALL_ROLES
          ];
          return view('admin/petugas/edit-data-petugas', $data);
       }
 
-      $password = $this->request->getVar('password') ?? false;
+      $password  = $this->request->getVar('password') ?? false;
+      $email     = $this->request->getVar('email');
+      $username  = $this->request->getVar('username');
+      $role      = $this->request->getVar('role');
+      $id_guru   = $this->request->getVar('id_guru') ?: null;
+      $id_tendik = $this->request->getVar('id_tendik') ?: null;
 
-      $email = $this->request->getVar('email');
-      $username = $this->request->getVar('username');
-      $role = $this->request->getVar('role');
-      $id_guru = $this->request->getVar('id_guru') ?: null;
+      if ($role === 'scanner') {
+         $role = 'tendik';
+      }
+
+      // Validasi penyesuaian Role otomatis berdasarkan identitas pegawainya
+      if (!empty($id_tendik) && empty($id_guru) && $role === 'guru') {
+         $role = 'tendik';
+      } elseif (!empty($id_guru) && empty($id_tendik) && $role === 'tendik') {
+         $role = 'guru';
+      }
 
       $result = $this->petugasModel->savePetugas(
          $idPetugas,
@@ -198,21 +216,16 @@ class DataPetugas extends BaseController
          $password,
          $role,
          $id_guru,
-         $petugasLama['active']
+         $petugasLama['active'],
+         $id_tendik
       );
 
       if ($result) {
-         session()->setFlashdata([
-            'msg' => 'Edit data berhasil',
-            'error' => false
-         ]);
+         session()->setFlashdata(['msg' => 'Edit data berhasil', 'error' => false]);
          return redirect()->to('/admin/petugas');
       }
 
-      session()->setFlashdata([
-         'msg' => 'Gagal mengubah data',
-         'error' => true
-      ]);
+      session()->setFlashdata(['msg' => 'Gagal mengubah data', 'error' => true]);
       return redirect()->to('/admin/petugas/edit/' . $idPetugas);
    }
 
@@ -225,17 +238,11 @@ class DataPetugas extends BaseController
       $result = $this->petugasModel->delete($id);
 
       if ($result) {
-         session()->setFlashdata([
-            'msg' => 'Data berhasil dihapus',
-            'error' => false
-         ]);
+         session()->setFlashdata(['msg' => 'Data berhasil dihapus', 'error' => false]);
          return redirect()->to('/admin/petugas');
       }
 
-      session()->setFlashdata([
-         'msg' => 'Gagal menghapus data',
-         'error' => true
-      ]);
+      session()->setFlashdata(['msg' => 'Gagal menghapus data', 'error' => true]);
       return redirect()->to('/admin/petugas');
    }
 
@@ -253,23 +260,10 @@ class DataPetugas extends BaseController
       $newStatus = ($petugas['active'] ?? 0) == 1 ? 0 : 1;
       $this->petugasModel->update($id, ['active' => $newStatus]);
 
-      session()->setFlashdata([
-         'msg' => 'Status akun berhasil diubah',
-         'error' => false
-      ]);
-
+      session()->setFlashdata(['msg' => 'Status akun berhasil diubah', 'error' => false]);
       return redirect()->to('/admin/petugas');
    }
 
-   /*
-    *-------------------------------------------------------------------------------------------------
-    * IMPORT PETUGAS
-    *-------------------------------------------------------------------------------------------------
-    */
-
-   /**
-    * Bulk Post Upload
-    */
    public function bulkPost()
    {
       if (!is_superadmin()) {
@@ -277,24 +271,21 @@ class DataPetugas extends BaseController
       }
 
       $data = [
-         'title' => 'Import Petugas',
-         'ctx' => 'petugas',
-         'guru' => $this->guruModel->getAllGuru(),
+         'title'  => 'Import Petugas',
+         'ctx'    => 'petugas',
+         'guru'   => $this->guruModel->getAllGuru(),
+         'tendik' => $this->tendikModel->getAllTendik(),
       ];
 
       return view('admin/petugas/import-petugas', $data);
    }
 
-   /**
-    * Generate CSV Object Post
-    */
    public function generateCSVObjectPost()
    {
       if (!is_superadmin()) {
          return redirect()->to('admin');
       }
 
-      //delete old txt files
       $files = glob(FCPATH . 'uploads/tmp/*.txt');
       if (!empty($files)) {
          foreach ($files as $item) {
@@ -318,9 +309,6 @@ class DataPetugas extends BaseController
       return $this->response->setJSON(['result' => 0]);
    }
 
-   /**
-    * Import CSV Item Post
-    */
    public function importCSVItemPost()
    {
       if (!is_superadmin()) {
@@ -331,44 +319,22 @@ class DataPetugas extends BaseController
       $index = inputPost('index');
 
       if (!is_numeric($index) || (int) $index < 1) {
-         return $this->response->setJSON([
-            'result' => 0,
-            'index' => $index,
-            'message' => 'Invalid index'
-         ]);
+         return $this->response->setJSON(['result' => 0, 'index' => $index, 'message' => 'Invalid index']);
       }
       $index = (int) $index;
 
       try {
          $petugas = $this->petugasModel->importCSVItem($txtFileName, $index);
          if (!empty($petugas)) {
-            $data = [
-               'result' => 1,
-               'petugas' => $petugas,
-               'index' => $index
-            ];
-            return $this->response->setJSON($data);
+            return $this->response->setJSON(['result' => 1, 'petugas' => $petugas, 'index' => $index]);
          } else {
-            $data = [
-               'result' => 0,
-               'index' => $index,
-               'message' => 'Duplicate or invalid data'
-            ];
-            return $this->response->setJSON($data);
+            return $this->response->setJSON(['result' => 0, 'index' => $index, 'message' => 'Duplicate or invalid data']);
          }
       } catch (\Exception $e) {
-         $data = [
-            'result' => 0,
-            'index' => $index,
-            'message' => 'Error: ' . $e->getMessage()
-         ];
-         return $this->response->setJSON($data);
+         return $this->response->setJSON(['result' => 0, 'index' => $index, 'message' => 'Error: ' . $e->getMessage()]);
       }
    }
 
-   /**
-    * Download CSV File Post
-    */
    public function downloadCSVFilePost()
    {
       if (!is_superadmin()) {

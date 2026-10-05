@@ -1,124 +1,196 @@
-<?= $this->extend('templates/admin_page_layout') ?>
-<?= $this->section('content') ?>
-<div class="content">
-   <div class="container-fluid">
-      <div class="card">
-         <div class="card-body">
-            <div class="row">
-               <div class="col-md-3">
-                  <div class="pt-3 pl-3 pb-2">
-                     <h4><b>Tanggal</b></h4>
-                     <input class="form-control" type="date" name="tanggal" id="tanggal"
-                        value="<?= $date; ?>" onchange="getSiswa(<?= $kelas['id_kelas']; ?>, '<?= $kelas['kelas']; ?>')">
-                  </div>
-               </div>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= esc($title ?? 'Riwayat Kehadiran & Perizinan Guru'); ?></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .badge-status {
+            font-weight: bold;
+            border-radius: 6px;
+            padding: 5px 12px;
+            display: inline-block;
+            font-size: 13px;
+        }
+        .status-hadir {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        .status-tidak-hadir {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        .status-pending {
+            background-color: #fff8e1;
+            color: #f57f17;
+            border: 1px solid #ffecb3;
+        }
+    </style>
+</head>
+<body class="grey lighten-4">
+
+    <!-- Navbar Portal Guru -->
+    <nav class="indigo darken-3">
+        <div class="nav-wrapper container">
+            <a href="<?= base_url('teacher/dashboard'); ?>" class="brand-logo">Portal Absensi Guru</a>
+            <ul id="nav-mobile" class="right">
+                <li><a href="<?= base_url('teacher/dashboard'); ?>"><i class="material-icons left">dashboard</i>Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 35px; margin-bottom: 50px;">
+
+        <!-- 1. TABEL RIWAYAT PRESENSI SCAN GURU -->
+        <div class="card white" style="padding: 25px; border-radius: 8px; margin-bottom: 30px;">
+            <div class="row" style="margin-bottom: 10px;">
+                <div class="col s12 m8">
+                    <h5 style="margin-top: 0; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <i class="material-icons indigo-text text-darken-3">history</i> Catatan Riwayat Presensi Guru
+                    </h5>
+                    <p class="grey-text">Status akan berubah menjadi <b>Hadir</b> jika sudah melakukan scan masuk dan scan pulang.</p>
+                </div>
+                <div class="col s12 m4 right-align">
+                    <a href="<?= base_url('teacher/dashboard'); ?>" class="btn grey darken-1 waves-effect waves-light">
+                        <i class="material-icons left">arrow_back</i>Kembali
+                    </a>
+                </div>
             </div>
-         </div>
-      </div>
-      <div class="card" id="dataSiswa">
-         <div class="card-body">
-             <div class="text-center p-5">
-                 <div class="spinner-border text-primary" role="status">
-                     <span class="sr-only">Loading...</span>
-                 </div>
-             </div>
-         </div>
-      </div>
-   </div>
 
-   <!-- Modal ubah kehadiran -->
-   <div class="modal fade" id="ubahModal" tabindex="-1" aria-labelledby="modalUbahKehadiran" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title" id="modalUbahKehadiran">Ubah kehadiran</h5>
-               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-               </button>
+            <div class="divider" style="margin-bottom: 20px;"></div>
+
+            <table class="striped responsive-table highlight">
+                <thead>
+                    <tr class="indigo lighten-5">
+                        <th class="center-align" style="width: 60px;">No</th>
+                        <th>Tanggal</th>
+                        <th>Jam Masuk</th>
+                        <th>Jam Pulang</th>
+                        <th class="center-align">Status Kehadiran</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                        $dataPresensi = $riwayat ?? $riwayatPresensi ?? [];
+                    ?>
+                    <?php if (!empty($dataPresensi)) : ?>
+                        <?php $no = 1; foreach ($dataPresensi as $row) : 
+                            $masuk  = $row['jam_masuk'] ?? $row['waktu_masuk'] ?? null;
+                            $pulang = $row['jam_keluar'] ?? $row['jam_pulang'] ?? null;
+                            $sudahPulang = (!empty($pulang) && $pulang != '-' && $pulang != '00:00:00');
+                        ?>
+                            <tr>
+                                <td class="center-align"><?= $no++; ?></td>
+                                <td><?= date('d-m-Y', strtotime($row['tanggal'] ?? $row['tgl'] ?? date('Y-m-d'))); ?></td>
+                                <td>
+                                    <b class="blue-text text-darken-2"><?= esc($masuk ?: '-'); ?></b>
+                                </td>
+                                <td>
+                                    <b class="orange-text text-darken-3"><?= esc($sudahPulang ? $pulang : '-'); ?></b>
+                                </td>
+                                <td class="center-align">
+                                    <?php if ($sudahPulang) : ?>
+                                        <span class="badge-status status-hadir">
+                                            <i class="material-icons tiny left" style="vertical-align: middle;">check_circle</i> Hadir
+                                        </span>
+                                    <?php else : ?>
+                                        <span class="badge-status status-tidak-hadir">
+                                            <i class="material-icons tiny left" style="vertical-align: middle;">cancel</i> Tidak Hadir
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr>
+                            <td colspan="5" class="center-align grey-text" style="padding: 30px;">
+                                <i class="material-icons medium" style="opacity: 0.3;">event_busy</i>
+                                <p style="margin-top: 8px;">Belum ada catatan presensi scan tersimpan.</p>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2. TABEL RIWAYAT PENGAJUAN PERIZINAN GURU -->
+        <div class="card white" style="padding: 25px; border-radius: 8px;">
+            <div class="row" style="margin-bottom: 10px;">
+                <div class="col s12 m8">
+                    <h5 style="margin-top: 0; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <i class="material-icons blue-text text-darken-2">assignment</i> Catatan Riwayat Perizinan Guru
+                    </h5>
+                    <p class="grey-text">Rekapitulasi permohonan izin/sakit/dinas beserta status keputusan persetujuan Admin.</p>
+                </div>
+                <div class="col s12 m4 right-align">
+                    <a href="<?= base_url('teacher/perizinan'); ?>" class="btn blue darken-2 waves-effect waves-light">
+                        <i class="material-icons left">add</i>Ajukan Izin Baru
+                    </a>
+                </div>
             </div>
-            <div id="modalFormUbahSiswa"></div>
-         </div>
-      </div>
-   </div>
-</div>
-<?= $this->endSection() ?>
 
-<?= $this->section('scripts') ?>
-<script>
-    var lastIdKelas = <?= $kelas['id_kelas']; ?>;
-    var lastKelas = '<?= $kelas['kelas']; ?>';
+            <div class="divider" style="margin-bottom: 20px;"></div>
 
-   $(document).ready(function() {
-       getSiswa(lastIdKelas, lastKelas);
-   });
+            <table class="striped responsive-table highlight">
+                <thead>
+                    <tr class="blue lighten-5">
+                        <th class="center-align" style="width: 60px;">No</th>
+                        <th>Tanggal Pengajuan</th>
+                        <th>Jenis Izin</th>
+                        <th>Keterangan / Alasan</th>
+                        <th class="center-align">Status Persetujuan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                        $dataIzin = $riwayatPerizinan ?? $perizinan ?? [];
+                    ?>
+                    <?php if (!empty($dataIzin)) : ?>
+                        <?php $no = 1; foreach ($dataIzin as $izin) : 
+                            $statusIzin = strtolower($izin['status'] ?? 'pending');
+                            $isApproved = in_array($statusIzin, ['disetujui', 'diterima', 'approved', 'setuju']);
+                            $isRejected = in_array($statusIzin, ['ditolak', 'rejected', 'tolak']);
+                        ?>
+                            <tr>
+                                <td class="center-align"><?= $no++; ?></td>
+                                <td><?= date('d-m-Y', strtotime($izin['tanggal'] ?? $izin['tanggal_mulai'] ?? date('Y-m-d'))); ?></td>
+                                <td><b><?= esc($izin['tipe_izin'] ?? $izin['jenis_izin'] ?? 'Izin'); ?></b></td>
+                                <td><?= esc($izin['keterangan'] ?? $izin['alasan'] ?? '-'); ?></td>
+                                <td class="center-align">
+                                    <?php if ($isApproved) : ?>
+                                        <span class="badge-status status-hadir">
+                                            <i class="material-icons tiny left" style="vertical-align: middle;">check_circle</i> Disetujui
+                                        </span>
+                                    <?php elseif ($isRejected) : ?>
+                                        <span class="badge-status status-tidak-hadir">
+                                            <i class="material-icons tiny left" style="vertical-align: middle;">cancel</i> Ditolak
+                                        </span>
+                                    <?php else : ?>
+                                        <span class="badge-status status-pending">
+                                            <i class="material-icons tiny left" style="vertical-align: middle;">hourglass_empty</i> Menunggu Persetujuan
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr>
+                            <td colspan="5" class="center-align grey-text" style="padding: 30px;">
+                                <i class="material-icons medium" style="opacity: 0.3;">assignment_late</i>
+                                <p style="margin-top: 8px;">Belum ada riwayat pengajuan perizinan Guru.</p>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
 
-   function getSiswa(idKelas, kelas) {
-      var tanggal = $('#tanggal').val();
+    </div>
 
-      jQuery.ajax({
-         url: "<?= base_url('/teacher/attendance/get-list'); ?>",
-         type: 'post',
-         data: setAjaxData({
-            'kelas': kelas,
-            'id_kelas': idKelas,
-            'tanggal': tanggal
-         }),
-         success: function (response, status, xhr) {
-            $('#dataSiswa').html(response);
-         },
-         error: function (xhr, status, thrown) {
-            console.log(thrown);
-            $('#dataSiswa').html(thrown);
-         }
-      });
-      lastIdKelas = idKelas;
-      lastKelas = kelas;
-   }
-
-   function getDataKehadiran(idPresensi, idSiswa) {
-      jQuery.ajax({
-         url: "<?= base_url('/teacher/attendance/get-edit-modal'); ?>",
-         type: 'post',
-         data: setAjaxData({
-            'id_presensi': idPresensi,
-            'id_siswa': idSiswa
-         }),
-         success: function (response, status, xhr) {
-            $('#modalFormUbahSiswa').html(response);
-         },
-         error: function (xhr, status, thrown) {
-            console.log(thrown);
-            $('#modalFormUbahSiswa').html(thrown);
-         }
-      });
-   }
-
-   function ubahKehadiran() {
-      var tanggal = $('#tanggal').val();
-      var form = $('#formUbah').serializeArray();
-
-      form.push({
-         name: 'tanggal',
-         value: tanggal
-      });
-
-      jQuery.ajax({
-         url: "<?= base_url('/teacher/attendance/update-single'); ?>",
-         type: 'post',
-         data: setSerializedData(form),
-         success: function (response, status, xhr) {
-            if (response['status']) {
-               getSiswa(lastIdKelas, lastKelas);
-               alert('Berhasil ubah kehadiran : ' + response['nama_siswa']);
-            } else {
-               alert('Gagal ubah kehadiran : ' + response['nama_siswa']);
-            }
-         },
-         error: function (xhr, status, thrown) {
-            console.log(thrown);
-            alert('Gagal ubah kehadiran\n' + thrown);
-         }
-      });
-   }
-</script>
-<?= $this->endSection() ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>

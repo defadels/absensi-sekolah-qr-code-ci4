@@ -29,16 +29,6 @@ class AuthGroups extends ShieldAuthGroups
      * --------------------------------------------------------------------
      * Groups
      * --------------------------------------------------------------------
-     * An associative array of the available groups in the system, where the keys
-     * are the group names and the values are arrays of the group info.
-     *
-     * Whatever value you assign as the key will be used to refer to the group
-     * when using functions such as:
-     *      $user->addGroup('superadmin');
-     *
-     * @var array<string, array<string, string>>
-     *
-     * @see https://codeigniter4.github.io/shield/quick_start_guide/using_authorization/#change-available-groups for more info
      */
     public array $groups = [
         'superadmin' => [
@@ -59,7 +49,11 @@ class AuthGroups extends ShieldAuthGroups
         ],
         'guru' => [
             'title'       => 'Guru',
-            'description' => 'Guru yang dapat menjadi wali kelas dan mengelola presensi siswanya.',
+            'description' => 'Guru pengajar yang mengakses dashboard guru.',
+        ],
+        'tendik' => [
+            'title'       => 'Tenaga Kependidikan',
+            'description' => 'Staff tendik yang mengakses dashboard tendik.',
         ],
     ];
 
@@ -67,9 +61,6 @@ class AuthGroups extends ShieldAuthGroups
      * --------------------------------------------------------------------
      * Permissions
      * --------------------------------------------------------------------
-     * The available permissions in the system.
-     *
-     * If a permission is not listed here it cannot be used.
      */
     public array $permissions = [
         'dashboard.view-admin'  => 'Dapat melihat dashboard admin',
@@ -83,16 +74,14 @@ class AuthGroups extends ShieldAuthGroups
         'petugas.manage'        => 'Dapat mengelola akun petugas',
         'settings.manage'       => 'Dapat mengelola pengaturan aplikasi',
         'backup.manage'         => 'Dapat melakukan backup dan restore',
-        'teacher.access'        => 'Dapat mengakses dashboard wali kelas',
+        'teacher.access'        => 'Dapat mengakses dashboard guru',
+        'tendik.access'         => 'Dapat mengakses dashboard tendik',
     ];
 
     /**
      * --------------------------------------------------------------------
      * Permissions Matrix
      * --------------------------------------------------------------------
-     * Maps permissions to groups.
-     *
-     * This defines group-level permissions.
      */
     public array $matrix = [
         'superadmin' => [
@@ -107,6 +96,7 @@ class AuthGroups extends ShieldAuthGroups
             'settings.*',
             'backup.*',
             'teacher.*',
+            'tendik.*',
         ],
         'admin' => [
             'dashboard.view-admin',
@@ -128,6 +118,9 @@ class AuthGroups extends ShieldAuthGroups
             'teacher.access',
             'attendance.edit',
             'attendance.view',
+        ],
+        'tendik' => [
+            'tendik.access',
         ],
     ];
 }

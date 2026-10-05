@@ -3,14 +3,14 @@
       <nav class="float-left">
          <ul>
             <li>
-               <a href="https://github.com/ikhsan3adi/absensi-sekolah-qr-code">
-                  Github
+               <a href="<?= base_url(); ?>">
+                  SMK Swasta Bina Satria
                </a>
             </li>
          </ul>
       </nav>
       <div class="copyright float-right">
-         <?= $generalSettings->copyright; ?>
+         &copy; <?= date('Y'); ?> SMK Swasta Bina Satria.TP 2026/2027. All rights reserved.
       </div>
    </div>
 </footer>

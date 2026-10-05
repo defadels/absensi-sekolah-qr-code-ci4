@@ -7,7 +7,6 @@
             <div class="card">
                <div class="card-header card-header-primary">
                   <h4 class="card-title"><b>Form Edit Petugas</b></h4>
-
                </div>
                <div class="card-body mx-5 my-3">
 
@@ -54,33 +53,45 @@
                         </div>
                      </div>
 
-                     <div class="row">
-                        <div class="col-md-6">
+                     <div class="row mt-4">
+                        <div class="col-md-4">
                            <label for="role">Role</label>
+                           <?php 
+                              $activeRole = strtolower(old('role') ?? $oldInput['role'] ?? ($data['groups'][0] ?? $data['role'] ?? ''));
+                           ?>
                            <select class="custom-select <?= $validation->getError('role') ? 'is-invalid' : ''; ?>" id="role" name="role">
                               <option value="">--Pilih role--</option>
-                              <?php foreach ($roles as $role): ?>
-                                 <option value="<?= $role->value ?>" <?= (old('role') ?? $oldInput['role'] ?? ($data['groups'][0] ?? 'scanner')) == $role->value ? 'selected' : ''; ?>>
-                                    <?= $role->label() ?>
-                                 </option>
-                              <?php endforeach; ?>
+                              <option value="superadmin" <?= in_array($activeRole, ['superadmin', 'admin']) ? 'selected' : ''; ?>>Super Admin</option>
+                              <option value="guru" <?= ($activeRole === 'guru') ? 'selected' : ''; ?>>Guru</option>
+                              <option value="tendik" <?= in_array($activeRole, ['tendik', 'scanner']) ? 'selected' : ''; ?>>Tendik</option>
                            </select>
                            <div class="invalid-feedback">
                               <?= $validation->getError('role'); ?>
                            </div>
                         </div>
-                        <div class="col-md-6">
+
+                        <div class="col-md-4">
                            <label for="id_guru">Hubungkan ke Guru (Opsional)</label>
                            <select class="custom-select" id="id_guru" name="id_guru">
                               <option value="">--Pilih Guru--</option>
-                              <?php foreach ($guru as $g): ?>
-                                 <option value="<?= $g['id_guru']; ?>" <?= (old('id_guru') ?? $data['id_guru']) == $g['id_guru'] ? 'selected' : ''; ?>><?= $g['nama_guru']; ?></option>
+                              <?php foreach (($guru ?? []) as $g): ?>
+                                 <option value="<?= $g['id_guru']; ?>" <?= (old('id_guru') ?? $data['id_guru'] ?? '') == $g['id_guru'] ? 'selected' : ''; ?>><?= $g['nama_guru']; ?></option>
+                              <?php endforeach; ?>
+                           </select>
+                        </div>
+
+                        <div class="col-md-4">
+                           <label for="id_tendik">Hubungkan ke Tendik (Opsional)</label>
+                           <select class="custom-select" id="id_tendik" name="id_tendik">
+                              <option value="">--Pilih Tendik--</option>
+                              <?php foreach (($tendik ?? []) as $t): ?>
+                                 <option value="<?= $t['id_tendik']; ?>" <?= (old('id_tendik') ?? $data['id_tendik'] ?? '') == $t['id_tendik'] ? 'selected' : ''; ?>><?= $t['nama_tendik']; ?></option>
                               <?php endforeach; ?>
                            </select>
                         </div>
                      </div>
 
-                     <button type="submit" class="btn btn-primary btn-block mt-3">Simpan</button>
+                     <button type="submit" class="btn btn-primary btn-block mt-4">Simpan</button>
                   </form>
                </div>
             </div>

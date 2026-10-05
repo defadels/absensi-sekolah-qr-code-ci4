@@ -7,7 +7,6 @@
             <div class="card">
                <div class="card-header card-header-success">
                   <h4 class="card-title"><b>Form Tambah Guru</b></h4>
-
                </div>
                <div class="card-body mx-5 my-3">
 
@@ -40,22 +39,31 @@
                         <label for="nama">Nama Lengkap</label>
                         <input type="text" id="nama"
                            class="form-control <?= $validation->getError('nama') ? 'is-invalid' : ''; ?>" name="nama"
-                           placeholder="Your Name" value="<?= old('nama') ?? $oldInput['nama'] ?? '' ?>" required>
+                           placeholder="Nama Guru" value="<?= old('nama') ?? $oldInput['nama'] ?? '' ?>" required>
                         <div class="invalid-feedback">
                            <?= $validation->getError('nama'); ?>
+                        </div>
+                     </div>
+
+                     <div class="form-group mt-4">
+                        <label for="mapel">Mata Pelajaran Pengampu</label>
+                        <input type="text" id="mapel"
+                           class="form-control <?= $validation->getError('mapel') ? 'is-invalid' : ''; ?>" name="mapel"
+                           placeholder="Contoh: Produktif TKR, Matematika, Bahasa Indonesia" value="<?= old('mapel') ?? $oldInput['mapel'] ?? '' ?>">
+                        <div class="invalid-feedback">
+                           <?= $validation->getError('mapel'); ?>
                         </div>
                      </div>
 
                      <div class="form-group mt-2">
                         <label for="jk">Jenis Kelamin</label>
                         <?php
-                        if (old('jk')) {
+                        if (old('jk') || isset($oldInput['jk'])) {
                            $l = (old('jk') ?? $oldInput['jk'] ?? '') == '1' ? 'checked' : '';
                            $p = (old('jk') ?? $oldInput['jk'] ?? '') == '2' ? 'checked' : '';
                         }
                         ?>
-                        <div
-                           class="form-check form-control pt-0 mb-1 <?= $validation->getError('jk') ? 'is-invalid' : ''; ?>">
+                        <div class="form-check form-control pt-0 mb-1 <?= $validation->getError('jk') ? 'is-invalid' : ''; ?>">
                            <div class="row">
                               <div class="col-auto">
                                  <div class="row">
@@ -64,7 +72,7 @@
                                     </div>
                                     <div class="col">
                                        <label class="form-check-label pl-0 pt-1" for="laki">
-                                          <h6 class="text-dark">Laki-laki</h5>
+                                          <h6 class="text-dark">Laki-laki</h6>
                                        </label>
                                     </div>
                                  </div>
@@ -108,13 +116,13 @@
                         <label for="rfid">RFID Code</label>
                         <input type="text" id="rfid" name="rfid"
                            class="form-control <?= $validation->getError('rfid') ? 'is-invalid' : ''; ?>"
-                           value="<?= old('rfid') ?? $oldInput['rfid'] ?? '' ?>" placeholder="Tap RFID Card here">
+                           value="<?= old('rfid') ?? $oldInput['rfid'] ?? '' ?>" placeholder="Tap RFID Card link">
                         <div class="invalid-feedback">
                            <?= $validation->getError('rfid'); ?>
                         </div>
                      </div>
 
-                     <button type="submit" class="btn btn-success btn-block">Simpan</button>
+                     <button type="submit" class="btn btn-success btn-block mt-4">Simpan</button>
                   </form>
 
                   <hr>

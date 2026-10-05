@@ -2,74 +2,115 @@
 
 namespace App\Controllers;
 
-use App\Models\SiswaModel;
-use App\Models\PresensiSiswaModel;
-use CodeIgniter\I18n\Time;
+use App\Controllers\BaseController;
+use App\Models\GuruModel;
+use App\Models\TendikModel;
+use App\Models\PresensiGuruModel;
+use App\Models\PresensiTendikModel;
 
 class CekKehadiran extends BaseController
 {
-    protected $siswaModel;
-    protected $presensiSiswaModel;
+   protected GuruModel $guruModel;
+   protected TendikModel $tendikModel;
+   protected PresensiGuruModel $presensiGuruModel;
+   protected PresensiTendikModel $presensiTendikModel;
 
-    public function __construct()
-    {
-        $this->siswaModel = new SiswaModel();
-        $this->presensiSiswaModel = new PresensiSiswaModel();
-        helper(['form', 'url']);
-    }
+   public function __construct()
+   {
+      $this->guruModel = new GuruModel();
+      $this->tendikModel = new TendikModel();
+      $this->presensiGuruModel = new PresensiGuruModel();
+      $this->presensiTendikModel = new PresensiTendikModel();
+      helper(['form', 'url']);
+   }
 
-    public function index()
-    {
-        return view('cek_kehadiran/index', [
-            'title' => 'Portal Cek Kehadiran Mandiri'
-        ]);
-    }
+   public function index()
+   {
+      $keyword = $this->request->getVar('keyword');
+      $tanggal = $this->request->getVar('tanggal') ?? date('Y-m-d');
 
-    public function view()
-    {
-        $nis = request()->getPost('nis');
-        $no_hp = request()->getPost('no_hp');
+      $hasil = null;
+      $tipe  = null;
 
-        // Validasi identitas
-        $siswa = $this->siswaModel->where(['nis' => $nis, 'no_hp' => $no_hp])->first();
+      if ($keyword) {
+         $db = \Config\Database::connect();
 
-        if (!$siswa) {
-            return redirect()->back()->with('error', 'Kombinasi NIS dan Nomor HP tidak cocok.');
-        }
+         // 1. Cari Data di Tendik
+         $tendikBuilder = $this->tendikModel->groupStart();
+         if ($db->fieldExists('nip', 'tb_tendik')) {
+            $tendikBuilder->where('nip', $keyword);
+         }
+         if ($db->fieldExists('unique_code', 'tb_tendik')) {
+            $tendikBuilder->orWhere('unique_code', $keyword);
+         }
+         if ($db->fieldExists('rfid_code', 'tb_tendik')) {
+            $tendikBuilder->orWhere('rfid_code', $keyword);
+         }
+         if ($db->fieldExists('nama_tendik', 'tb_tendik')) {
+            $tendikBuilder->orLike('nama_tendik', $keyword);
+         } elseif ($db->fieldExists('nama', 'tb_tendik')) {
+            $tendikBuilder->orLike('nama', $keyword);
+         }
+         $tendik = $tendikBuilder->groupEnd()->first();
 
-        // Ambil data presensi tahun ini untuk DataTables
-        $year = date('Y');
-        
-        $history = $this->presensiSiswaModel
-            ->where('id_siswa', $siswa['id_siswa'])
-            ->where('YEAR(tanggal)', $year)
-            ->orderBy('tanggal', 'DESC')
-            ->findAll();
+         if ($tendik) {
+            $tipe = 'tendik';
+            $idTendik = $tendik['id_tendik'] ?? $tendik['id'] ?? 0;
 
-        // Hitung Summary (Bulan Berjalan)
-        $month = date('m');
-        $stats = [
-            'hadir' => 0,
-            'sakit' => 0,
-            'izin' => 0,
-            'alfa' => 0
-        ];
+            $presensi = method_exists($this->presensiTendikModel, 'getPresensiByIdTendikTanggal')
+               ? $this->presensiTendikModel->getPresensiByIdTendikTanggal($idTendik, $tanggal)
+               : $this->presensiTendikModel->where('id_tendik', $idTendik)->where('tanggal', $tanggal)->first();
 
-        foreach ($history as $h) {
-            if (date('m', strtotime($h['tanggal'])) == $month) {
-                if ($h['id_kehadiran'] == 1) $stats['hadir']++;
-                elseif ($h['id_kehadiran'] == 2) $stats['sakit']++;
-                elseif ($h['id_kehadiran'] == 3) $stats['izin']++;
-                elseif ($h['id_kehadiran'] == 4) $stats['alfa']++;
+            $hasil = [
+               'pegawai'  => $tendik,
+               'presensi' => $presensi
+            ];
+         } else {
+            // 2. Jika Tidak Ada di Tendik, Cari di Guru
+            $guruBuilder = $this->guruModel->groupStart();
+            if ($db->fieldExists('nuptk', 'tb_guru')) {
+               $guruBuilder->where('nuptk', $keyword);
             }
-        }
+            if ($db->fieldExists('nip', 'tb_guru')) {
+               $guruBuilder->orWhere('nip', $keyword);
+            }
+            if ($db->fieldExists('unique_code', 'tb_guru')) {
+               $guruBuilder->orWhere('unique_code', $keyword);
+            }
+            if ($db->fieldExists('rfid_code', 'tb_guru')) {
+               $guruBuilder->orWhere('rfid_code', $keyword);
+            }
+            if ($db->fieldExists('nama_guru', 'tb_guru')) {
+               $guruBuilder->orLike('nama_guru', $keyword);
+            } elseif ($db->fieldExists('nama', 'tb_guru')) {
+               $guruBuilder->orLike('nama', $keyword);
+            }
+            $guru = $guruBuilder->groupEnd()->first();
 
-        return view('cek_kehadiran/hasil', [
-            'title' => 'Riwayat Kehadiran: ' . $siswa['nama_siswa'],
-            'siswa' => $siswa,
-            'history' => $history,
-            'stats' => $stats,
-            'monthName' => date('F Y')
-        ]);
-    }
+            if ($guru) {
+               $tipe = 'guru';
+               $idGuru = $guru['id_guru'] ?? $guru['id'] ?? 0;
+
+               $presensi = method_exists($this->presensiGuruModel, 'getPresensiByIdGuruTanggal')
+                  ? $this->presensiGuruModel->getPresensiByIdGuruTanggal($idGuru, $tanggal)
+                  : $this->presensiGuruModel->where('id_guru', $idGuru)->where('tanggal', $tanggal)->first();
+
+               $hasil = [
+                  'pegawai'  => $guru,
+                  'presensi' => $presensi
+               ];
+            }
+         }
+      }
+
+      $data = [
+         'title'   => 'Cek Kehadiran Guru & Tendik',
+         'keyword' => $keyword,
+         'tanggal' => $tanggal,
+         'tipe'    => $tipe,
+         'hasil'   => $hasil
+      ];
+
+      return view('cek_kehadiran/index', $data);
+   }
 }

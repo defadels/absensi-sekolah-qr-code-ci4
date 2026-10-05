@@ -83,15 +83,31 @@ class Filters extends BaseFilters
      * applied before and after every request.
      *
      * @var array{
-     *     before: array<string, array{except: list<string>|string}>|list<string>,
-     *     after: array<string, array{except: list<string>|string}>|list<string>
+     *    before: array<string, array{except: list<string>|string}>|list<string>,
+     *    after: array<string, array{except: list<string>|string}>|list<string>
      * }
      */
     public array $globals = [
         'before' => [
             'honeypot',
-            'session' => ['except' => ['login', 'izin', 'izin/*', 'cek-kehadiran', 'cek-kehadiran/*']],
-            'csrf' => ['except' => ['login', 'scan', 'scan/*', 'cek-kehadiran', 'cek-kehadiran/*']],
+            'session' => [
+                'except' => [
+                    'login', 
+                    'daftar', 'daftar/*', 
+                    'register', 'register/*', 
+                    'izin', 'izin/*', 
+                    'cek-kehadiran', 'cek-kehadiran/*'
+                ]
+            ],
+            'csrf' => [
+                'except' => [
+                    'login', 
+                    'daftar', 'daftar/*', 
+                    'register', 'register/*', 
+                    'scan', 'scan/*', 
+                    'cek-kehadiran', 'cek-kehadiran/*'
+                ]
+            ],
             // 'invalidchars',
         ],
         'after' => [

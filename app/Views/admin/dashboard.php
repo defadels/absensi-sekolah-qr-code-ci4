@@ -1,4 +1,5 @@
 <?= $this->extend('templates/admin_page_layout') ?>
+
 <?= $this->section('styles') ?>
 <style>
     .chart-container {
@@ -8,21 +9,22 @@
     }
 </style>
 <?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <div class="content">
     <div class="container-fluid">
-        <!-- REKAP JUMLAH DATA -->
+        <!-- REKAP JUMLAH DATA (DESKTOP) -->
         <div class="row d-none d-sm-flex">
             <div class="col-lg-3 col-md-6 col-sm-6">
                 <div class="card card-stats">
                     <div class="card-header card-header-primary card-header-icon">
                         <div class="card-icon">
-                            <a href="<?= base_url('admin/siswa'); ?>" class="text-white">
-                                <i class="material-icons">person</i>
+                            <a href="<?= base_url('admin/tendik'); ?>" class="text-white">
+                                <i class="material-icons">badge</i>
                             </a>
                         </div>
-                        <p class="card-category">Jumlah siswa</p>
-                        <h3 class="card-title"><?= count($siswa); ?></h3>
+                        <p class="card-category">Jumlah Tendik</p>
+                        <h3 class="card-title"><?= count($tendik); ?></h3>
                     </div>
                     <div class="card-footer">
                         <div class="stats">
@@ -40,7 +42,7 @@
                                 <i class="material-icons">person_4</i>
                             </a>
                         </div>
-                        <p class="card-category">Jumlah guru</p>
+                        <p class="card-category">Jumlah Guru</p>
                         <h3 class="card-title"><?= count($guru); ?></h3>
                     </div>
                     <div class="card-footer">
@@ -55,17 +57,17 @@
                 <div class="card card-stats">
                     <div class="card-header card-header-info card-header-icon">
                         <div class="card-icon">
-                            <a href="<?= base_url('admin/kelas'); ?>" class="text-white">
-                                <i class="material-icons">grade</i>
+                            <a href="<?= base_url('admin/mata-pelajaran'); ?>" class="text-white">
+                                <i class="material-icons">work</i>
                             </a>
                         </div>
-                        <p class="card-category">Kelas / Jurusan</p>
-                        <h3 class="card-title text-nowrap"><?= count($kelas) . ' / ' . count($jurusan); ?></h3>
+                        <p class="card-category">Jabatan / Mapel</p>
+                        <h3 class="card-title text-nowrap"><?= count($jabatan) . ' / ' . count($mapel); ?></h3>
                     </div>
                     <div class="card-footer">
                         <div class="stats">
                             <i class="material-icons">home</i>
-                            <?= $generalSettings->school_name; ?>
+                            <?= $generalSettings->school_name ?? 'SMK Swasta Bina Satria Medan'; ?>
                         </div>
                     </div>
                 </div>
@@ -78,7 +80,7 @@
                                 <i class="material-icons">settings</i>
                             </a>
                         </div>
-                        <p class="card-category">Jumlah petugas</p>
+                        <p class="card-category">Jumlah Petugas</p>
                         <h3 class="card-title"><?= count($petugas); ?></h3>
                     </div>
                     <div class="card-footer">
@@ -90,17 +92,19 @@
                 </div>
             </div>
         </div>
+
+        <!-- REKAP JUMLAH DATA (MOBILE) -->
         <div class="row d-sm-none">
             <div class="col-6">
                 <div class="card">
                     <div class="card-header card-header-primary">
-                        <a href="<?= base_url('admin/siswa'); ?>" class="text-white">
+                        <a href="<?= base_url('admin/tendik'); ?>" class="text-white">
                             <div class="d-flex justify-content-end">
                                 <div class="text-right">
-                                    <p class="card-category">Jumlah siswa</p>
+                                    <p class="card-category">Jumlah Tendik</p>
                                     <h3 class="card-title text-nowrap">
-                                        <i class="material-icons">person</i>
-                                        <?= count($siswa); ?>
+                                        <i class="material-icons">badge</i>
+                                        <?= count($tendik); ?>
                                     </h3>
                                 </div>
                             </div>
@@ -120,7 +124,7 @@
                         <a href="<?= base_url('admin/guru'); ?>" class="text-white">
                             <div class="d-flex justify-content-end">
                                 <div class="text-right">
-                                    <p class="card-category">Jumlah guru</p>
+                                    <p class="card-category">Jumlah Guru</p>
                                     <h3 class="card-title text-nowrap">
                                         <i class="material-icons">person_4</i>
                                         <?= count($guru); ?>
@@ -137,105 +141,57 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6">
-                <div class="card">
-                    <div class="card-header card-header-info">
-                        <a href="<?= base_url('admin/kelas'); ?>" class="text-white">
-                            <div class="d-flex justify-content-end">
-                                <div class="text-right">
-                                    <p class="card-category">Kelas / Jurusan</p>
-                                    <h3 class="card-title text-nowrap">
-                                        <?= count($kelas) . ' / ' . count($jurusan); ?>
-                                    </h3>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="card-footer">
-                        <div class="stats">
-                            <i class="material-icons">home</i>
-                            <?= $generalSettings->school_name; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="card">
-                    <div class="card-header card-header-danger">
-                        <a href="<?= base_url('admin/petugas'); ?>" class="text-white">
-                            <div class="d-flex justify-content-end">
-                                <div class="text-right">
-                                    <p class="card-category">Jumlah petugas</p>
-                                    <h3 class="card-title">
-                                        <i class="material-icons">settings</i>
-
-                                        <?= count($petugas); ?>
-                                    </h3>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="card-footer">
-                        <div class="stats">
-                            <i class="material-icons">person</i>
-                            Admin
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
+        <?php 
+            $now = \CodeIgniter\I18n\Time::now();
+            $limit = $generalSettings->jam_pulang_standard ?? '14:00:00';
+            $isAfterSchool = $now->toTimeString() > $limit;
+        ?>
+
         <div class="row">
-            <!-- STATS SISWA HARI INI -->
+            <!-- STATS TENDIK HARI INI -->
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header card-header-primary">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 12px;">
-                            <div>
-                                <h4 class="card-title"><b id="titleSiswaStats">Absensi Siswa Hari Ini</b></h4>
-                                <p class="card-category"><?= $dateNow; ?></p>
+                        <h4 class="card-title"><b>Absensi Tendik Hari Ini</b></h4>
+                        <p class="card-category"><?= $dateNow; ?></p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center flex-nowrap">
+                            <div class="col-2">
+                                <h5 class="text-success text-nowrap"><b>Hadir</b></h5>
+                                <h4 class="text-nowrap"><?= $jumlahKehadiranTendik['hadir']; ?></h4>
                             </div>
-                            <!-- FILTER KELAS -->
-                            <div class="text-right">
-                                <div class="d-flex align-items-center justify-content-end">
-                                    <div id="filterLoader" style="display: none;">
-                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                            <span class="sr-only">Loading...</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <select name="id_kelas" id="filterKelas" class="custom-select">
-                                            <option value="">-- Semua Kelas (<?= count($siswa) ?> siswa) --
-                                            </option>
-                                            <?php foreach ($kelas as $k): ?>
-                                                <option value="<?= $k['id_kelas'] ?>" data-kelas="<?= $k['kelas'] ?>">
-                                                    <?= $k['kelas'] ?> (
-                                                    <?= $k['jumlah_siswa'] ?? 0 ?> siswa)
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
+                            <div class="col-2">
+                                <h5 class="text-warning text-nowrap"><b>Sakit</b></h5>
+                                <h4 class="text-nowrap"><?= $jumlahKehadiranTendik['sakit']; ?></h4>
+                            </div>
+                            <div class="col-2">
+                                <h5 class="text-info text-nowrap"><b>Izin</b></h5>
+                                <h4 class="text-nowrap"><?= $jumlahKehadiranTendik['izin']; ?></h4>
+                            </div>
+                            <div class="col-2">
+                                <?php if ($isAfterSchool): ?>
+                                    <h5 class="text-danger text-nowrap"><b>Alfa</b></h5>
+                                    <h4 class="text-nowrap"><?= $jumlahKehadiranTendik['alfa']; ?></h4>
+                                <?php else: ?>
+                                    <h5 class="text-muted text-nowrap"><b>Belum Scan</b></h5>
+                                    <h4 class="text-nowrap"><?= $jumlahKehadiranTendik['alfa']; ?></h4>
+                                <?php endif; ?>
+                            </div>
+                            <div class="col-1">
+                                <div class="border-right mx-auto h-100" style="width: 0;"></div>
+                            </div>
+                            <div class="col-3">
+                                <h5 class="text-primary text-nowrap"><b>Total Tendik</b></h5>
+                                <h4 class="text-nowrap"><?= $totalTendik; ?></h4>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body" id="siswaStatsContainer">
-                        <?php 
-                            $now = \CodeIgniter\I18n\Time::now();
-                            $limit = $generalSettings->jam_pulang_standard ?? '14:00:00';
-                            $isAfterSchool = $now->toTimeString() > $limit;
-                        ?>
-                        <?= view('admin/_dashboard_siswa_stats', [
-                            'hadir' => $jumlahKehadiranSiswa['hadir'],
-                            'sakit' => $jumlahKehadiranSiswa['sakit'],
-                            'izin' => $jumlahKehadiranSiswa['izin'],
-                            'alfa' => $jumlahKehadiranSiswa['alfa'],
-                            'totalSiswa' => $totalSiswa,
-                            'isAfterSchool' => $isAfterSchool
-                        ]) ?>
-                    </div>
                 </div>
             </div>
+
             <!-- STATS GURU HARI INI -->
             <div class="col-lg-6">
                 <div class="card">
@@ -280,93 +236,27 @@
         </div>
 
         <div class="row">
-            <!-- TOP TERLAMBAT -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header card-header-warning">
-                        <h4 class="card-title"><b>Top 5 Poin Keterlambatan</b></h4>
-                        <p class="card-category">Siswa dengan akumulasi menit terbanyak</p>
-                    </div>
-                    <div class="card-body table-responsive">
-                        <table class="table table-hover">
-                            <thead class="text-warning">
-                                <th>NIS</th>
-                                <th>Nama Siswa</th>
-                                <th>Poin</th>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($topLateStudents)): ?>
-                                    <tr>
-                                        <td colspan="3" class="text-center">Belum ada data.</td>
-                                    </tr>
-                                <?php endif; ?>
-                                <?php foreach ($topLateStudents as $ls): ?>
-                                    <tr>
-                                        <td><?= $ls['nis'] ?></td>
-                                        <td><b><?= $ls['nama_siswa'] ?></b><br><small><?= $ls['tingkat'] ?> <?= $ls['jurusan'] ?> <?= $ls['index_kelas'] ?></small></td>
-                                        <td><span class="badge badge-warning"><?= $ls['poin_pelanggaran'] ?></span></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ABSENTEE ALERT -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header card-header-danger">
-                        <h4 class="card-title"><b>Peringatan: Tidak Hadir 3 Hari+</b></h4>
-                        <p class="card-category">Siswa yang membolos selama 3 hari berturut-turut</p>
-                    </div>
-                    <div class="card-body table-responsive">
-                        <table class="table table-hover">
-                            <thead class="text-danger">
-                                <th>Nama Siswa</th>
-                                <th>Kelas</th>
-                                <th>Status</th>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($absenteeAlerts)): ?>
-                                    <tr>
-                                        <td colspan="3" class="text-center">Tidak ada peringatan saat ini.</td>
-                                    </tr>
-                                <?php endif; ?>
-                                <?php foreach ($absenteeAlerts as $aa): ?>
-                                    <tr>
-                                        <td><b><?= $aa['nama_siswa'] ?></b><br><small><?= $aa['nis'] ?></small></td>
-                                        <td><?= $aa['tingkat'] ?> <?= $aa['jurusan'] ?> <?= $aa['index_kelas'] ?></td>
-                                        <td><span class="badge badge-danger">Alfa <?= $aa['days_count'] ?> Hari</span></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <!-- CHART SISWA -->
+            <!-- CHART TENDIK -->
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header card-header-primary">
-                        <h4 class="card-title" id="titleSiswaChart">Tingkat Kehadiran Siswa</h4>
+                        <h4 class="card-title">Tingkat Kehadiran Tendik</h4>
                         <p class="card-category">Statistik kehadiran 7 hari terakhir | <?= $dateNow; ?></p>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
-                            <canvas id="kehadiranSiswa"></canvas>
+                            <canvas id="kehadiranTendik"></canvas>
                         </div>
                     </div>
                     <div class="card-footer">
                         <div class="stats">
-                            <i class="material-icons text-primary">checklist</i> <a class="text-primary" href="<?= base_url('admin/absen-siswa'); ?>">Lihat data</a>
+                            <i class="material-icons text-primary">checklist</i> 
+                            <a class="text-primary" href="<?= base_url('admin/absen-tendik'); ?>">Lihat data</a>
                         </div>
                     </div>
                 </div>
             </div>
+
             <!-- CHART GURU -->
             <div class="col-lg-6">
                 <div class="card">
@@ -381,7 +271,8 @@
                     </div>
                     <div class="card-footer">
                         <div class="stats">
-                            <i class="material-icons text-success">checklist</i> <a class="text-success" href="<?= base_url('admin/absen-guru'); ?>">Lihat data</a>
+                            <i class="material-icons text-success">checklist</i> 
+                            <a class="text-success" href="<?= base_url('admin/absen-guru'); ?>">Lihat data</a>
                         </div>
                     </div>
                 </div>
@@ -395,7 +286,7 @@
 <!-- Chart.js CDN -->
 <script src="<?= base_url('assets/js/plugins/chartjs/chart.umd.min.js') ?>"></script>
 <script>
-    let kehadiranSiswaChart;
+    let kehadiranTendikChart;
     let kehadiranGuruChart;
 
     const chartLabels = <?= json_encode($dateRange) ?>;
@@ -417,142 +308,79 @@
                 datasets: [
                     {
                         label: 'Hadir',
-                        data: data.hadir,
+                        data: data.hadir || [],
                         borderColor: chartColors.hadir.border,
                         backgroundColor: chartColors.hadir.bg,
-                        tension: 0.3,
-                        fill: false,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
                     },
                     {
                         label: 'Sakit',
-                        data: data.sakit,
+                        data: data.sakit || [],
                         borderColor: chartColors.sakit.border,
                         backgroundColor: chartColors.sakit.bg,
-                        tension: 0.3,
-                        fill: false,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
                     },
                     {
                         label: 'Izin',
-                        data: data.izin,
+                        data: data.izin || [],
                         borderColor: chartColors.izin.border,
                         backgroundColor: chartColors.izin.bg,
-                        tension: 0.3,
-                        fill: false,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
                     },
                     {
                         label: 'Belum Absen',
-                        data: data.belum_absen,
+                        data: data.belum_absen || [],
                         borderColor: chartColors.belum_absen.border,
                         backgroundColor: chartColors.belum_absen.bg,
-                        tension: 0.3,
-                        fill: false,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
                     },
                     {
                         label: 'Alfa',
-                        data: data.alfa,
+                        data: data.alfa || [],
                         borderColor: chartColors.alfa.border,
                         backgroundColor: chartColors.alfa.bg,
-                        tension: 0.3,
-                        fill: false,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
                 plugins: {
                     legend: {
                         display: true,
                         position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20
-                        }
-                    },
-                    tooltip: {
-                        enabled: true,
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: { size: 14 },
-                        bodyFont: { size: 13 },
-                        padding: 12,
-                        cornerRadius: 8,
-                        callbacks: {
-                            label: function (context) {
-                                return context.dataset.label + ': ' + context.parsed.y + ' orang';
-                            }
-                        }
                     }
                 },
                 scales: {
                     y: {
-                        stacked: false,
                         beginAtZero: true,
-                        ticks: {
-                            stepSize: 1,
-                            callback: function (value) {
-                                if (Number.isInteger(value)) return value;
-                            }
-                        },
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        ticks: { stepSize: 1 }
                     },
                     x: {
-                        stacked: false,
-                        grid: { display: false },
-                        ticks: {
-                            color: chartLabelColors
-                        }
+                        ticks: { color: chartLabelColors }
                     }
                 }
             }
         };
     }
 
-    function updateSiswaChart(newData) {
-        if (kehadiranSiswaChart) {
-            kehadiranSiswaChart.data.datasets[0].data = newData.hadir;
-            kehadiranSiswaChart.data.datasets[1].data = newData.sakit;
-            kehadiranSiswaChart.data.datasets[2].data = newData.izin;
-            kehadiranSiswaChart.data.datasets[3].data = newData.belum_absen;
-            kehadiranSiswaChart.data.datasets[4].data = newData.alfa;
-            kehadiranSiswaChart.update('active');
-        }
-    }
-
     function initDashboardPageCharts() {
-        const siswaCtx = document.getElementById('kehadiranSiswa');
-        if (siswaCtx) {
-            const dataSiswa = {
-                hadir: <?= json_encode($grafikKehadiranSiswa['hadir']) ?>,
-                sakit: <?= json_encode($grafikKehadiranSiswa['sakit']) ?>,
-                izin: <?= json_encode($grafikKehadiranSiswa['izin']) ?>,
-                alfa: <?= json_encode($grafikKehadiranSiswa['alfa']) ?>,
-                belum_absen: <?= json_encode($grafikKehadiranSiswa['belum_absen']) ?>
+        const tendikCtx = document.getElementById('kehadiranTendik');
+        if (tendikCtx) {
+            const dataTendik = {
+                hadir: <?= json_encode($grafikKehadiranTendik['hadir'] ?? []) ?>,
+                sakit: <?= json_encode($grafikKehadiranTendik['sakit'] ?? []) ?>,
+                izin: <?= json_encode($grafikKehadiranTendik['izin'] ?? []) ?>,
+                alfa: <?= json_encode($grafikKehadiranTendik['alfa'] ?? []) ?>,
+                belum_absen: <?= json_encode($grafikKehadiranTendik['belum_absen'] ?? []) ?>
             };
-            kehadiranSiswaChart = new Chart(siswaCtx, createChartConfig(dataSiswa));
+            kehadiranTendikChart = new Chart(tendikCtx, createChartConfig(dataTendik));
         }
 
         const guruCtx = document.getElementById('kehadiranGuru');
         if (guruCtx) {
             const dataGuru = {
-                hadir: <?= json_encode($grafikKehadiranGuru['hadir']) ?>,
-                sakit: <?= json_encode($grafikKehadiranGuru['sakit']) ?>,
-                izin: <?= json_encode($grafikKehadiranGuru['izin']) ?>,
-                alfa: <?= json_encode($grafikKehadiranGuru['alfa']) ?>,
-                belum_absen: <?= json_encode($grafikKehadiranGuru['belum_absen']) ?>
+                hadir: <?= json_encode($grafikKehadiranGuru['hadir'] ?? []) ?>,
+                sakit: <?= json_encode($grafikKehadiranGuru['sakit'] ?? []) ?>,
+                izin: <?= json_encode($grafikKehadiranGuru['izin'] ?? []) ?>,
+                alfa: <?= json_encode($grafikKehadiranGuru['alfa'] ?? []) ?>,
+                belum_absen: <?= json_encode($grafikKehadiranGuru['belum_absen'] ?? []) ?>
             };
             kehadiranGuruChart = new Chart(guruCtx, createChartConfig(dataGuru));
         }
@@ -560,56 +388,6 @@
 
     $(document).ready(function () {
         initDashboardPageCharts();
-
-        // Fitur Live Monitoring (Update setiap 10 detik)
-        setInterval(function() {
-            const idKelas = $('#filterKelas').val();
-            $.ajax({
-                url: "<?= base_url('admin/dashboard/live-stats') ?>",
-                type: "GET",
-                data: { id_kelas: idKelas },
-                success: function(response) {
-                    if ($('#hadirCount').length) {
-                        $('#hadirCount').text(response.stats.hadir);
-                        $('#sakitCount').text(response.stats.sakit);
-                        $('#izinCount').text(response.stats.izin);
-                        $('#alfaCount').text(response.stats.alfa);
-                        
-                        const alfaLabel = $('#alfaLabel');
-                        if (response.isAfterSchool) {
-                            alfaLabel.removeClass('text-muted').addClass('text-danger').html('<b>Alfa</b>');
-                        } else {
-                            alfaLabel.removeClass('text-danger').addClass('text-muted').html('<b>Belum Absen</b>');
-                        }
-                    }
-                }
-            });
-        }, 10000);
-
-        $('#filterKelas').on('change', function () {
-            const idKelas = $(this).val();
-            const loader = $('#filterLoader');
-
-            loader.show();
-
-            $.ajax({
-                url: '<?= base_url('admin/dashboard/filter-data') ?>',
-                type: 'POST',
-                data: setAjaxData({ id_kelas: idKelas }),
-                success: function (response) {
-                     if (response.result == 1) {
-                        $('#siswaStatsContainer').html(response.htmlContent);
-                        updateSiswaChart(response.chartData);
-                    }
-                },
-                error: function (xhr, status, thrown) {
-                    console.error(thrown);
-                },
-                complete: function () {
-                    loader.hide();
-                }
-            });
-        });
     });
 </script>
 <?= $this->endSection() ?>

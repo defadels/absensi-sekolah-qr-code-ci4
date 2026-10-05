@@ -20,7 +20,7 @@
                      <div class="card-header card-header-tabs card-header-success">
                         <div class="nav-tabs-navigation">
                            <div class="row">
-                              <div class="col-md-4 col-lg-5">
+                              <div class="col-md-4 col-lg-4">
                                  <h4 class="card-title"><b>Daftar Guru</b></h4>
                                  <p class="card-category">Angkatan <?= $generalSettings->school_year; ?></p>
                               </div>
@@ -40,6 +40,16 @@
                                           <i class="material-icons">add</i> Tambah data guru
                                           <div class="ripple-container"></div>
                                        </a>
+                                    </div>
+                                 </div>
+                                 <div class="col-12 col-sm-auto nav nav-tabs">
+                                    <div class="nav-item">
+                                       <form action="<?= base_url('admin/guru/deleteAll'); ?>" method="post" class="d-inline" onsubmit="return confirm('PERINGATAN! Apakah Anda YAKIN ingin menghapus SEMUA data Guru? Data yang dihapus tidak bisa dikembalikan!');">
+                                          <?= csrf_field(); ?>
+                                          <button type="submit" class="nav-link bg-danger text-white border-0" style="cursor: pointer;">
+                                             <i class="material-icons">delete_sweep</i> Hapus Semua Data
+                                          </button>
+                                       </form>
                                     </div>
                                  </div>
                                  <div class="col-12 col-sm-auto nav nav-tabs">
@@ -78,7 +88,6 @@
          type: 'post',
          data: setAjaxData({}),
          success: function (response, status, xhr) {
-            // console.log(status);
             $('#dataGuru').html(response);
 
             $('html, body').animate({

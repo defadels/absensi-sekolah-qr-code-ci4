@@ -4,233 +4,285 @@ namespace App\Controllers;
 
 use CodeIgniter\I18n\Time;
 use App\Models\GuruModel;
-use App\Models\SiswaModel;
+use App\Models\TendikModel;
 use App\Models\PresensiGuruModel;
-use App\Models\PresensiSiswaModel;
-use App\Libraries\enums\TipeUser;
+use App\Models\PresensiTendikModel;
+use App\Models\HariLiburModel;
 
 class Scan extends BaseController
 {
-   private bool $WANotificationEnabled;
-
-   protected SiswaModel $siswaModel;
    protected GuruModel $guruModel;
-
-   protected PresensiSiswaModel $presensiSiswaModel;
+   protected TendikModel $tendikModel;
    protected PresensiGuruModel $presensiGuruModel;
+   protected PresensiTendikModel $presensiTendikModel;
 
    public function __construct()
    {
-      $this->WANotificationEnabled = getenv('WA_NOTIFICATION') === 'true' ? true : false;
-
-      $this->siswaModel = new SiswaModel();
       $this->guruModel = new GuruModel();
-      $this->presensiSiswaModel = new PresensiSiswaModel();
+      $this->tendikModel = new TendikModel();
       $this->presensiGuruModel = new PresensiGuruModel();
+      $this->presensiTendikModel = new PresensiTendikModel();
    }
 
    public function index($t = 'Masuk')
    {
-      $data = ['waktu' => $t, 'title' => 'Absensi Siswa dan Guru Berbasis QR Code'];
+      $data = ['waktu' => ucfirst($t), 'title' => 'Absensi Guru dan Tendik Berbasis QR Code'];
       return view('scan/scan', $data);
    }
 
    public function cekKode()
    {
-      // Cek apakah hari ini libur
-      $holidayModel = new \App\Models\HariLiburModel();
-      $today = date('Y-m-d');
-      $holiday = $holidayModel->where('tanggal', $today)->first();
-
-      if ($holiday) {
-         return $this->showErrorView("Hari ini sistem presensi dinonaktifkan karena: " . $holiday['keterangan']);
-      }
-
-      // ambil variabel POST
-      $uniqueCode = $this->request->getVar('unique_code');
-      $waktuAbsen = $this->request->getVar('waktu');
-
-      $status = false;
-      $type = TipeUser::Siswa;
-
-      // cek data siswa di database
-      $result = $this->siswaModel->cekSiswa($uniqueCode);
-
-      if (empty($result)) {
-         // jika cek siswa gagal, cek data guru
-         $result = $this->guruModel->cekGuru($uniqueCode);
-
-         if (!empty($result)) {
-            $status = true;
-
-            $type = TipeUser::Guru;
-         } else {
-            $status = false;
-
-            $result = NULL;
+      try {
+         $db = \Config\Database::connect();
+         $holidayModel = new HariLiburModel();
+         $today = date('Y-m-d');
+         
+         if ($db->tableExists('tb_hari_libur')) {
+            $holiday = $holidayModel->where('tanggal', $today)->first();
+            if ($holiday) {
+               return $this->showErrorView("Hari ini sistem presensi dinonaktifkan karena: " . ($holiday['keterangan'] ?? 'Hari Libur'));
+            }
          }
-      } else {
-         $status = true;
-      }
 
-      if (!$status) { // data tidak ditemukan
-         return $this->showErrorView('Data tidak ditemukan');
-      }
+         $rawInput = $this->request->getVar('unique_code') 
+                  ?? $this->request->getVar('kode') 
+                  ?? $this->request->getVar('qr_code') 
+                  ?? $this->request->getVar('rfid') 
+                  ?? $this->request->getVar('content') 
+                  ?? '';
 
-      // jika data ditemukan
-      switch ($waktuAbsen) {
-         case 'masuk':
+         $waktuAbsen = strtolower($this->request->getVar('waktu') ?? 'masuk');
+
+         if (empty($rawInput)) {
+            return $this->showErrorView('Kode QR / RFID tidak terbaca oleh sistem.');
+         }
+
+         $cleanCode = trim((string)$rawInput);
+         if (filter_var($cleanCode, FILTER_VALIDATE_URL)) {
+            $urlParts = explode('/', rtrim($cleanCode, '/'));
+            $cleanCode = end($urlParts);
+         }
+         
+         $strippedCode = trim(str_replace(['GURU_', 'TENDIK_', 'guru_', 'tendik_', 'QR_', 'qr_'], '', $cleanCode));
+
+         $type = null;
+         $result = null;
+
+         // 1. PENCARIAN KE TABEL GURU (Guru menggunakan NUPTK)
+         if ($db->tableExists('tb_guru')) {
+            $builderG = $db->table('tb_guru');
+            $builderG->groupStart();
+            $hasQuery = false;
+
+            if ($db->fieldExists('nuptk', 'tb_guru')) {
+               $builderG->where('nuptk', $cleanCode)->orWhere('nuptk', $strippedCode);
+               $hasQuery = true;
+            }
+            if ($db->fieldExists('unique_code', 'tb_guru')) {
+               if (!$hasQuery) {
+                  $builderG->where('unique_code', $cleanCode)->orWhere('unique_code', $strippedCode);
+                  $hasQuery = true;
+               } else {
+                  $builderG->orWhere('unique_code', $cleanCode)->orWhere('unique_code', $strippedCode);
+               }
+            }
+            if ($db->fieldExists('id_guru', 'tb_guru') && is_numeric($strippedCode)) {
+               if (!$hasQuery) {
+                  $builderG->where('id_guru', (int)$strippedCode);
+               } else {
+                  $builderG->orWhere('id_guru', (int)$strippedCode);
+               }
+            }
+
+            $builderG->groupEnd();
+            $result = $builderG->get()->getRowArray();
+
+            if (!empty($result)) {
+               $type = 'Guru';
+            }
+         }
+
+         // 2. PENCARIAN KE TABEL TENDIK (Tendik menggunakan NIP)
+         if (empty($result) && $db->tableExists('tb_tendik')) {
+            $builderT = $db->table('tb_tendik');
+            $builderT->groupStart();
+            $hasQueryT = false;
+
+            if ($db->fieldExists('nip', 'tb_tendik')) {
+               $builderT->where('nip', $cleanCode)->orWhere('nip', $strippedCode);
+               $hasQueryT = true;
+            }
+            if ($db->fieldExists('unique_code', 'tb_tendik')) {
+               if (!$hasQueryT) {
+                  $builderT->where('unique_code', $cleanCode)->orWhere('unique_code', $strippedCode);
+                  $hasQueryT = true;
+               } else {
+                  $builderT->orWhere('unique_code', $cleanCode)->orWhere('unique_code', $strippedCode);
+               }
+            }
+            if ($db->fieldExists('id_tendik', 'tb_tendik') && is_numeric($strippedCode)) {
+               if (!$hasQueryT) {
+                  $builderT->where('id_tendik', (int)$strippedCode);
+               } else {
+                  $builderT->orWhere('id_tendik', (int)$strippedCode);
+               }
+            }
+
+            $builderT->groupEnd();
+            $result = $builderT->get()->getRowArray();
+
+            if (!empty($result)) {
+               $type = 'Tendik';
+            }
+         }
+
+         if (empty($result) || empty($type)) {
+            return $this->showErrorView('Data pegawai tidak terdaftar untuk kode: ' . esc($cleanCode));
+         }
+
+         if ($waktuAbsen === 'masuk') {
             return $this->absenMasuk($type, $result);
-            break;
-
-         case 'pulang':
+         } elseif ($waktuAbsen === 'pulang') {
             return $this->absenPulang($type, $result);
-            break;
+         } else {
+            return $this->showErrorView('Waktu absensi tidak valid.');
+         }
 
-         default:
-            return $this->showErrorView('Data tidak valid');
-            break;
+      } catch (\Throwable $e) {
+         log_message('error', 'Error scan cekKode: ' . $e->getMessage());
+         return $this->showErrorView('Terjadi kesalahan server: ' . $e->getMessage());
       }
    }
 
    public function absenMasuk($type, $result)
    {
-      // data ditemukan
-      $data['data'] = $result;
+      $db   = \Config\Database::connect();
       $data['waktu'] = 'masuk';
-
       $date = Time::today()->toDateString();
       $time = Time::now()->toTimeString();
-      $messageString = " sudah absen masuk pada tanggal $date jam $time";
-      // absen masuk
-      switch ($type) {
-         case TipeUser::Guru:
-            $idGuru = $result['id_guru'];
-            $data['type'] = TipeUser::Guru;
 
-            $sudahAbsen = $this->presensiGuruModel->cekAbsen($idGuru, $date);
+      if ($type === 'Tendik') {
+         $idTendik = $result['id_tendik'] ?? $result['id'] ?? 1;
+         $data['type'] = 'Tendik';
+         $namaAsli = $result['nama_tendik'] ?? $result['nama'] ?? 'Tendik';
+         $result['nama_tendik'] = $namaAsli;
+         $data['data'] = $result;
 
-            if ($sudahAbsen) {
-               $data['presensi'] = $this->presensiGuruModel->getPresensiById($sudahAbsen);
-               return $this->showErrorView('Anda sudah absen hari ini', $data);
-            }
-
-            $this->presensiGuruModel->absenMasuk($idGuru, $date, $time);
-            $messageString = $result['nama_guru'] . ' dengan NIP ' . $result['nuptk'] . $messageString;
-            $data['presensi'] = $this->presensiGuruModel->getPresensiByIdGuruTanggal($idGuru, $date);
-
-            break;
-
-         case TipeUser::Siswa:
-            $idSiswa = $result['id_siswa'];
-            $idKelas = $result['id_kelas'];
-            $data['type'] = TipeUser::Siswa;
-
-            $sudahAbsen = $this->presensiSiswaModel->cekAbsen($idSiswa, Time::today()->toDateString());
-
-            if ($sudahAbsen) {
-               $data['presensi'] = $this->presensiSiswaModel->getPresensiById($sudahAbsen);
-               return $this->showErrorView('Anda sudah absen hari ini', $data);
-            }
-
-            $menitKeterlambatan = 0;
-            $jamMasukLimit = $this->generalSettings->jam_masuk_limit ?? null;
-
-            if ($jamMasukLimit && $time > $jamMasukLimit) {
-               $limit = Time::parse($date . ' ' . $jamMasukLimit);
-               $current = Time::parse($date . ' ' . $time);
-               $diff = $current->difference($limit);
-               $menitKeterlambatan = abs($diff->getMinutes());
-            }
-
-            $this->presensiSiswaModel->absenMasuk($idSiswa, $date, $time, $idKelas, $menitKeterlambatan);
-            $messageString = 'Siswa ' . $result['nama_siswa'] . ' dengan NIS ' . $result['nis'] . $messageString;
-            if ($menitKeterlambatan > 0) {
-               $messageString .= " (Terlambat $menitKeterlambatan menit)";
-            }
-            $data['presensi'] = $this->presensiSiswaModel->getPresensiByIdSiswaTanggal($idSiswa, $date);
-
-            break;
-
-         default:
-            return $this->showErrorView('Tipe tidak valid');
-      }
-
-      // kirim notifikasi ke whatsapp
-      if ($this->WANotificationEnabled && !empty($result['no_hp'])) {
-         $message = [
-            'destination' => $result['no_hp'],
-            'message' => $messageString,
-            'delay' => 0
-         ];
-         try {
-            $this->sendNotification($message);
-         } catch (\Exception $e) {
-            log_message('error', 'Error sending notification: ' . $e->getMessage());
+         $cek = $db->table('tb_presensi_tendik')->where(['id_tendik' => $idTendik, 'tanggal' => $date])->get()->getRowArray();
+         if ($cek && !empty($cek['jam_masuk']) && $cek['jam_masuk'] !== '00:00:00' && $cek['jam_masuk'] !== '-') {
+            $cek['nama_tendik'] = $namaAsli;
+            $data['presensi'] = $cek;
+            return $this->showErrorView('Anda sudah absen masuk hari ini', $data);
          }
+
+         if ($cek) {
+            $db->table('tb_presensi_tendik')->where(['id_tendik' => $idTendik, 'tanggal' => $date])->update([
+               'jam_masuk'    => $time,
+               'id_kehadiran' => 1
+            ]);
+         } else {
+            $fields = $db->getFieldNames('tb_presensi_tendik');
+            $insertData = [
+               'id_tendik'    => $idTendik,
+               'tanggal'      => $date,
+               'jam_masuk'    => $time,
+               'id_kehadiran' => 1
+            ];
+            $insertData = array_filter($insertData, fn($k) => in_array($k, $fields), ARRAY_FILTER_USE_KEY);
+            $db->table('tb_presensi_tendik')->insert($insertData);
+         }
+
+         $presensi = $db->table('tb_presensi_tendik')->where(['id_tendik' => $idTendik, 'tanggal' => $date])->get()->getRowArray();
+         $presensi['nama_tendik'] = $namaAsli;
+         $data['presensi'] = $presensi;
+
+      } else {
+         $idGuru = $result['id_guru'] ?? $result['id'] ?? 1;
+         $data['type'] = 'Guru';
+         $namaAsli = $result['nama_guru'] ?? $result['nama'] ?? 'Guru';
+         $result['nama_guru'] = $namaAsli;
+         $data['data'] = $result; 
+
+         $cek = $db->table('tb_presensi_guru')->where(['id_guru' => $idGuru, 'tanggal' => $date])->get()->getRowArray();
+         if ($cek && !empty($cek['jam_masuk']) && $cek['jam_masuk'] !== '00:00:00' && $cek['jam_masuk'] !== '-') {
+            $cek['nama_guru'] = $namaAsli;
+            $data['presensi'] = $cek;
+            return $this->showErrorView('Anda sudah absen masuk hari ini', $data);
+         }
+
+         if ($cek) {
+            $db->table('tb_presensi_guru')->where(['id_guru' => $idGuru, 'tanggal' => $date])->update([
+               'jam_masuk'    => $time,
+               'id_kehadiran' => 1
+            ]);
+         } else {
+            $fields = $db->getFieldNames('tb_presensi_guru');
+            $insertData = [
+               'id_guru'      => $idGuru,
+               'tanggal'      => $date,
+               'jam_masuk'    => $time,
+               'id_kehadiran' => 1
+            ];
+            $insertData = array_filter($insertData, fn($k) => in_array($k, $fields), ARRAY_FILTER_USE_KEY);
+            $db->table('tb_presensi_guru')->insert($insertData);
+         }
+
+         $presensi = $db->table('tb_presensi_guru')->where(['id_guru' => $idGuru, 'tanggal' => $date])->get()->getRowArray();
+         $presensi['nama_guru'] = $namaAsli;
+         $data['presensi'] = $presensi;
       }
+
       return view('scan/scan-result', $data);
    }
 
    public function absenPulang($type, $result)
    {
-      // data ditemukan
-      $data['data'] = $result;
+      $db   = \Config\Database::connect();
       $data['waktu'] = 'pulang';
-
       $date = Time::today()->toDateString();
       $time = Time::now()->toTimeString();
-      $messageString = " sudah absen pulang pada tanggal $date jam $time";
 
-      // absen pulang
-      switch ($type) {
-         case TipeUser::Guru:
-            $idGuru = $result['id_guru'];
-            $data['type'] = TipeUser::Guru;
+      if ($type === 'Tendik') {
+         $idTendik = $result['id_tendik'] ?? $result['id'] ?? 1;
+         $data['type'] = 'Tendik';
+         $namaAsli = $result['nama_tendik'] ?? $result['nama'] ?? 'Tendik';
+         $result['nama_tendik'] = $namaAsli;
+         $data['data'] = $result;
 
-            $sudahAbsen = $this->presensiGuruModel->cekAbsen($idGuru, $date);
-
-            if (!$sudahAbsen) {
-               return $this->showErrorView('Anda belum absen hari ini', $data);
-            }
-
-            $this->presensiGuruModel->absenKeluar($sudahAbsen, $time);
-            $messageString = $result['nama_guru'] . ' dengan NIP ' . $result['nuptk'] . $messageString;
-            $data['presensi'] = $this->presensiGuruModel->getPresensiById($sudahAbsen);
-
-            break;
-
-         case TipeUser::Siswa:
-            $idSiswa = $result['id_siswa'];
-            $data['type'] = TipeUser::Siswa;
-
-            $sudahAbsen = $this->presensiSiswaModel->cekAbsen($idSiswa, $date);
-
-            if (!$sudahAbsen) {
-               return $this->showErrorView('Anda belum absen hari ini', $data);
-            }
-
-            $this->presensiSiswaModel->absenKeluar($sudahAbsen, $time);
-            $messageString = 'Siswa ' . $result['nama_siswa'] . ' dengan NIS ' . $result['nis'] . $messageString;
-            $data['presensi'] = $this->presensiSiswaModel->getPresensiById($sudahAbsen);
-
-            break;
-         default:
-            return $this->showErrorView('Tipe tidak valid');
-      }
-
-      // kirim notifikasi ke whatsapp
-      if ($this->WANotificationEnabled && !empty($result['no_hp'])) {
-         $message = [
-            'destination' => $result['no_hp'],
-            'message' => $messageString,
-            'delay' => 0
-         ];
-         try {
-            $this->sendNotification($message);
-         } catch (\Exception $e) {
-            log_message('error', 'Error sending notification: ' . $e->getMessage());
+         $cek = $db->table('tb_presensi_tendik')->where(['id_tendik' => $idTendik, 'tanggal' => $date])->get()->getRowArray();
+         if (!$cek) {
+            return $this->showErrorView('Anda belum absen masuk hari ini', $data);
          }
+
+         $db->table('tb_presensi_tendik')->where(['id_tendik' => $idTendik, 'tanggal' => $date])->update([
+            'jam_keluar'   => $time,
+            'id_kehadiran' => 1
+         ]);
+
+         $presensi = $db->table('tb_presensi_tendik')->where(['id_tendik' => $idTendik, 'tanggal' => $date])->get()->getRowArray();
+         $presensi['nama_tendik'] = $namaAsli;
+         $data['presensi'] = $presensi;
+
+      } else {
+         $idGuru = $result['id_guru'] ?? $result['id'] ?? 1;
+         $data['type'] = 'Guru';
+         $namaAsli = $result['nama_guru'] ?? $result['nama'] ?? 'Guru';
+         $result['nama_guru'] = $namaAsli;
+         $data['data'] = $result;
+
+         $cek = $db->table('tb_presensi_guru')->where(['id_guru' => $idGuru, 'tanggal' => $date])->get()->getRowArray();
+         if (!$cek) {
+            return $this->showErrorView('Anda belum absen masuk hari ini', $data);
+         }
+
+         $db->table('tb_presensi_guru')->where(['id_guru' => $idGuru, 'tanggal' => $date])->update([
+            'jam_keluar'   => $time,
+            'id_kehadiran' => 1
+         ]);
+
+         $presensi = $db->table('tb_presensi_guru')->where(['id_guru' => $idGuru, 'tanggal' => $date])->get()->getRowArray();
+         $presensi['nama_guru'] = $namaAsli;
+         $data['presensi'] = $presensi;
       }
 
       return view('scan/scan-result', $data);
@@ -240,29 +292,6 @@ class Scan extends BaseController
    {
       $errdata = $data ?? [];
       $errdata['msg'] = $msg;
-
       return view('scan/error-scan-result', $errdata);
-   }
-
-   protected function sendNotification($message)
-   {
-      $token = getenv('WHATSAPP_TOKEN');
-      $provider = getenv('WHATSAPP_PROVIDER');
-
-      if (empty($provider)) {
-         return;
-      }
-      if (empty($token)) {
-         return;
-      }
-
-      switch ($provider) {
-         case 'Fonnte':
-            $whatsapp = new \App\Libraries\Whatsapp\Fonnte\Fonnte($token);
-            break;
-         default:
-            return;
-      }
-      $whatsapp->sendMessage($message);
    }
 }

@@ -3,209 +3,183 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
-use CodeIgniter\I18n\Time;
-use DateTime;
-use DateInterval;
-use DatePeriod;
-
 use App\Models\GuruModel;
-use App\Models\KelasModel;
-use App\Models\PresensiGuruModel;
-use App\Models\SiswaModel;
-use App\Models\PresensiSiswaModel;
+use App\Models\TendikModel;
 
 class GenerateLaporan extends BaseController
 {
-   protected SiswaModel $siswaModel;
-   protected KelasModel $kelasModel;
-
-   protected GuruModel $guruModel;
-
-   protected PresensiSiswaModel $presensiSiswaModel;
-   protected PresensiGuruModel $presensiGuruModel;
+   protected $guruModel;
+   protected $tendikModel;
 
    public function __construct()
    {
-      $this->siswaModel = new SiswaModel();
-      $this->kelasModel = new KelasModel();
-
       $this->guruModel = new GuruModel();
-
-      $this->presensiSiswaModel = new PresensiSiswaModel();
-      $this->presensiGuruModel = new PresensiGuruModel();
+      $this->tendikModel = new TendikModel();
+      helper(['form', 'url', 'user_helper']);
    }
 
    public function index()
    {
-      $kelas = $this->kelasModel->getDataKelas();
-      $guru = $this->guruModel->getAllGuru();
-
-      $siswaPerKelas = [];
-
-      foreach ($kelas as $value) {
-         array_push($siswaPerKelas, $this->siswaModel->getSiswaByKelas($value['id_kelas']));
-      }
-
       $data = [
-         'title' => 'Generate Laporan',
-         'ctx' => 'laporan',
-         'siswaPerKelas' => $siswaPerKelas,
-         'kelas' => $kelas,
-         'guru' => $guru
+         'title'  => 'Generate Laporan',
+         'guru'   => $this->guruModel->findAll(),
+         'tendik' => $this->tendikModel->findAll(),
       ];
 
-      return view('admin/generate-laporan/generate-laporan', $data);
+      return view('admin/generate-laporan/index', $data);
    }
 
-   public function generateLaporanSiswa()
+   public function guru()
    {
-      $idKelas = $this->request->getVar('kelas');
-      $siswa = $this->siswaModel->getSiswaByKelas($idKelas);
-      $type = $this->request->getVar('type');
-
-      if (empty($siswa)) {
-         session()->setFlashdata([
-            'msg' => 'Data siswa kosong!',
-            'error' => true
-         ]);
-         return redirect()->to('/admin/laporan');
-      }
-
-      $kelas = (array) $this->kelasModel->getKelas($idKelas);
-
-      $bulan = $this->request->getVar('tanggalSiswa');
-
-      // hari pertama dalam 1 bulan
-      $begin = new Time($bulan, locale: 'id');
-      // tanggal terakhir dalam 1 bulan
-      $end = (new DateTime($begin->format('Y-m-t')))->modify('+1 day');
-      // interval 1 hari
-      $interval = DateInterval::createFromDateString('1 day');
-      // buat array dari semua hari di bulan
-      $period = new DatePeriod($begin, $interval, $end);
-
-      $arrayTanggal = [];
-      $dataAbsen = [];
-
-      foreach ($period as $value) {
-         if (isWorkingDay($value->format('Y-m-d'))) {
-            $lewat = Time::parse($value->format('Y-m-d'))->isAfter(Time::today());
-
-            $absenByTanggal = $this->presensiSiswaModel
-               ->getPresensiByKelasTanggal($idKelas, $value->format('Y-m-d'));
-
-            $absenByTanggal['lewat'] = $lewat;
-
-            array_push($dataAbsen, $absenByTanggal);
-            array_push($arrayTanggal, Time::createFromInstance($value, locale: 'id'));
-         }
-      }
-
-      $laki = 0;
-
-      foreach ($siswa as $value) {
-         if ($value['jenis_kelamin'] != 'Perempuan') {
-            $laki++;
-         }
-      }
-
-      $data = [
-         'tanggal' => $arrayTanggal,
-         'bulan' => $begin->toLocalizedString('MMMM'),
-         'listAbsen' => $dataAbsen,
-         'listSiswa' => $siswa,
-         'rekapSiswa' => [
-            'laki' => $laki,
-            'perempuan' => count($siswa) - $laki
-         ],
-         'kelas' => $kelas,
-         'grup' => "kelas " . $kelas['kelas'],
-      ];
-
-      if ($type == 'doc') {
-         $this->response->setHeader('Content-type', 'application/vnd.ms-word');
-         $this->response->setHeader(
-            'Content-Disposition',
-            'attachment;Filename=laporan_absen_' . $kelas['kelas'] . '_' . $begin->toLocalizedString('MMMM-Y') . '.doc'
-         );
-
-         return view('admin/generate-laporan/laporan-siswa', $data);
-      }
-
-      return view('admin/generate-laporan/laporan-siswa', $data) . view('admin/generate-laporan/topdf');
+      return $this->prosesLaporan('guru');
    }
 
    public function generateLaporanGuru()
    {
-      $guru = $this->guruModel->getAllGuru();
-      $type = $this->request->getVar('type');
+      return $this->prosesLaporan('guru');
+   }
 
-      if (empty($guru)) {
-         session()->setFlashdata([
-            'msg' => 'Data guru kosong!',
-            'error' => true
-         ]);
-         return redirect()->to('/admin/laporan');
-      }
+   public function tendik()
+   {
+      return $this->prosesLaporan('tendik');
+   }
 
-      $bulan = $this->request->getVar('tanggalGuru');
+   public function generateLaporanTendik()
+   {
+      return $this->prosesLaporan('tendik');
+   }
 
-      // hari pertama dalam 1 bulan
-      $begin = new Time($bulan, locale: 'id');
-      // tanggal terakhir dalam 1 bulan
-      $end = (new DateTime($begin->format('Y-m-t')))->modify('+1 day');
-      // interval 1 hari
-      $interval = DateInterval::createFromDateString('1 day');
-      // buat array dari semua hari di bulan
-      $period = new DatePeriod($begin, $interval, $end);
+   private function prosesLaporan($grup)
+   {
+      $db = \Config\Database::connect();
+      $isGuru = ($grup === 'guru');
 
-      $arrayTanggal = [];
-      $dataAbsen = [];
+      $inputBulan = $this->request->getPost($isGuru ? 'tanggalGuru' : 'tanggalTendik') ?? date('Y-m');
+      $type       = $this->request->getPost('type') ?? 'pdf';
 
-      foreach ($period as $value) {
-         if (isWorkingDay($value->format('Y-m-d'))) {
-            $lewat = Time::parse($value->format('Y-m-d'))->isAfter(Time::today());
+      $listData = $isGuru ? $this->guruModel->findAll() : $this->tendikModel->findAll();
 
-            $absenByTanggal = $this->presensiGuruModel
-               ->getPresensiByTanggal($value->format('Y-m-d'));
-
-            $absenByTanggal['lewat'] = $lewat;
-
-            array_push($dataAbsen, $absenByTanggal);
-            array_push($arrayTanggal, Time::createFromInstance($value, locale: 'id'));
+      $jumlahLaki = 0;
+      $jumlahPerempuan = 0;
+      foreach ($listData as $row) {
+         $gender = strtolower($row['jenis_kelamin'] ?? $row['gender'] ?? 'L');
+         if ($gender === 'p' || $gender === 'perempuan') {
+            $jumlahPerempuan++;
+         } else {
+            $jumlahLaki++;
          }
       }
 
-      $laki = 0;
+      $startOfMonth = strtotime($inputBulan . '-01');
+      $endOfMonth   = strtotime('last day of ' . $inputBulan);
+      $tanggal      = [];
+      
+      $current = $startOfMonth;
+      while ($current <= $endOfMonth) {
+         $tanggal[] = \CodeIgniter\I18n\Time::parse(date('Y-m-d', $current));
+         $current = strtotime('+1 day', $current);
+      }
 
-      foreach ($guru as $value) {
-         if ($value['jenis_kelamin'] != 'Perempuan') {
-            $laki++;
+      $listAbsen = [];
+      $tablePresensi = $isGuru ? 'tb_presensi_guru' : 'tb_presensi_tendik';
+      $tablePresensiExists = $db->tableExists($tablePresensi);
+      $kolomId = $isGuru ? 'id_guru' : 'id_tendik';
+
+      foreach ($tanggal as $tglObj) {
+         $dateStr = $tglObj->format('Y-m-d');
+         $rowAbsen = [];
+         $isLewat = (strtotime($dateStr) > time());
+
+         foreach ($listData as $idx => $item) {
+            $idItem = $item[$kolomId] ?? $item['id'] ?? 0;
+            $kehadiran = null;
+
+            if ($tablePresensiExists && !$isLewat) {
+               $presensi = $db->table($tablePresensi)
+                             ->where($kolomId, $idItem)
+                             ->where('tanggal', $dateStr)
+                             ->get()
+                             ->getRowArray();
+               if ($presensi) {
+                  $kehadiran = $presensi['id_kehadiran'] ?? null;
+               }
+            }
+
+            $rowAbsen[$idx] = [
+               'id_kehadiran' => $kehadiran
+            ];
+         }
+
+         $listAbsen[] = [
+            'lewat' => $isLewat,
+            ...$rowAbsen
+         ];
+      }
+
+      // SINKRONISASI DATA PERIZINAN KE MATRIKS LAPORAN
+      if ($db->tableExists('tb_perizinan')) {
+         $perizinanList = $db->table('tb_perizinan')
+                             ->groupStart()
+                                ->where('status', 'diterima')
+                                ->orWhere('status', 'disetujui')
+                             ->groupEnd()
+                             ->get()
+                             ->getResultArray();
+
+         foreach ($perizinanList as $izin) {
+            $idPerizinanUser = $izin[$kolomId] ?? null;
+            $tglMulai        = $izin['tanggal'];
+            $tglSelesai      = $izin['tanggal_selesai'] ?? $tglMulai;
+            $idKehadiran     = $izin['id_kehadiran'] ?? 2; 
+
+            if (!empty($idPerizinanUser)) {
+               foreach ($listData as $idxItem => $item) {
+                  $idU = $item[$kolomId] ?? $item['id'] ?? null;
+                  if ($idU == $idPerizinanUser) {
+                     foreach ($tanggal as $idxTanggal => $objTanggal) {
+                        $strTgl = $objTanggal->format('Y-m-d');
+                        if ($strTgl >= $tglMulai && $strTgl <= $tglSelesai) {
+                           if (isset($listAbsen[$idxTanggal][$idxItem])) {
+                              $listAbsen[$idxTanggal][$idxItem]['id_kehadiran'] = (int)$idKehadiran;
+                           }
+                        }
+                     }
+                  }
+               }
+            }
          }
       }
+
+      $tableName = $db->tableExists('general_settings') ? 'general_settings' : ($db->tableExists('tb_pengaturan') ? 'tb_pengaturan' : 'tb_general_settings');
+      $generalSettings = $db->tableExists($tableName) ? $db->table($tableName)->get()->getFirstRow() : null;
 
       $data = [
-         'tanggal' => $arrayTanggal,
-         'bulan' => $begin->toLocalizedString('MMMM'),
-         'listAbsen' => $dataAbsen,
-         'listGuru' => $guru,
-         'jumlahGuru' => [
-            'laki' => $laki,
-            'perempuan' => count($guru) - $laki
-         ],
-         'grup' => 'guru',
+         'title'           => $isGuru ? 'Laporan Absensi Guru' : 'Laporan Absensi Tendik',
+         'bulan'           => date('F Y', strtotime($inputBulan . '-01')),
+         'tanggal'         => $tanggal,
+         'listAbsen'       => $listAbsen,
+         'generalSettings' => $generalSettings,
+         'grup'            => $isGuru ? 'Guru' : 'Tendik',
+         'type'            => $type
       ];
 
-      if ($type == 'doc') {
-         $this->response->setHeader('Content-type', 'application/vnd.ms-word');
-         $this->response->setHeader(
-            'Content-Disposition',
-            'attachment;Filename=laporan_absen_guru_' . $begin->toLocalizedString('MMMM-Y') . '.doc'
-         );
-
-         return view('admin/generate-laporan/laporan-guru', $data);
+      // JIKA USER MEMILIH GENERATE DOC (Word Download)
+      if ($type === 'doc') {
+         $filename = "Laporan_Absensi_{$grup}_" . date('Y_m', strtotime($inputBulan)) . ".doc";
+         header("Content-Type: application/vnd.ms-word");
+         header("Content-Disposition: attachment; filename=\"$filename\"");
+         header("Pragma: no-cache");
+         header("Expires: 0");
       }
 
-      return view('admin/generate-laporan/laporan-guru', $data) . view('admin/generate-laporan/topdf');
+      if ($isGuru) {
+         $data['listGuru'] = $listData;
+         $data['jumlahGuru'] = ['laki' => $jumlahLaki, 'perempuan' => $jumlahPerempuan];
+         return view('admin/generate-laporan/laporan-guru', $data);
+      } else {
+         $data['listTendik'] = $listData;
+         $data['jumlahTendik'] = ['laki' => $jumlahLaki, 'perempuan' => $jumlahPerempuan];
+         return view('admin/generate-laporan/laporan-tendik', $data);
+      }
    }
 }

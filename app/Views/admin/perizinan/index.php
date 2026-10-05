@@ -2,178 +2,108 @@
 
 <?= $this->section('content') ?>
 <div class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header card-header-primary d-flex justify-content-between align-items-center">
-                        <div>
-                            <h4 class="card-title"><?= $title ?></h4>
-                            <p class="card-category">Kelola pengajuan izin dan sakit siswa</p>
-                        </div>
-                        <div class="ml-auto col-auto row">
-                           <div class="col-12 col-sm-auto nav nav-tabs">
-                              <div class="nav-item">
-                                 <a class="nav-link" href="<?= base_url('/izin'); ?>">
-                                    <i class="material-icons">add</i> Ajukan Izin / Sakit
-                                    <div class="ripple-container"></div>
-                                 </a>
-                              </div>
-                           </div>
-                        </div>
-                        <button type="button" class="btn btn-white btn-round btn-just-icon" onclick="location.reload()" title="Refresh Data">
-                            <i class="material-icons text-primary">refresh</i>
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table id="tablePerizinan" class="table table-hover">
-                                <thead class="text-primary">
-                                    <th>No</th>
-                                    <th>Siswa</th>
-                                    <th>Tanggal</th>
-                                    <th>Tipe</th>
-                                    <th>Alasan</th>
-                                    <th>Bukti</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($perizinan)): ?>
-                                        <tr>
-                                            <td colspan="8" class="text-center">Tidak ada data pengajuan.</td>
-                                        </tr>
-                                    <?php endif; ?>
-                                    <?php foreach ($perizinan as $index => $p): ?>
-                                        <tr>
-                                            <td><?= $index + 1 ?></td>
-                                            <td>
-                                                <?php if (!empty($p['id_siswa'])): ?>
-                                                    <b><?= $p['nama_siswa'] ?></b> <span class="badge badge-default">Siswa</span><br>
-                                                    <small><?= $p['nis'] ?> | <?= $p['tingkat'] ?> <?= $p['jurusan'] ?> <?= $p['index_kelas'] ?></small>
-                                                <?php else: ?>
-                                                    <b><?= $p['nama_guru'] ?></b> <span class="badge badge-primary">Guru</span><br>
-                                                    <small>NUPTK: <?= $p['nuptk'] ?></small>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?= date('d/m/Y', strtotime($p['tanggal_mulai'])) ?> 
-                                                <?php if($p['tanggal_mulai'] != $p['tanggal_selesai']): ?>
-                                                    - <?= date('d/m/Y', strtotime($p['tanggal_selesai'])) ?>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <span class="p-2 badge badge-<?= $p['tipe_izin'] == 'Sakit' ? 'warning' : 'info' ?>">
-                                                    <?= $p['tipe_izin'] ?>
-                                                </span>
-                                            </td>
-                                            <td><?= $p['alasan'] ?></td>
-                                            <td>
-                                                <a href="<?= base_url('uploads/perizinan/' . $p['bukti']) ?>" target="_blank">
-                                                    <img src="<?= base_url('uploads/perizinan/' . $p['bukti']) ?>" width="50" class="img-thumbnail">
-                                                </a>
-                                            </td>
-                                            <td>
-                                                <?php if ($p['status'] == 'Pending'): ?>
-                                                    <span class="badge badge-default p-2">Pending</span>
-                                                <?php elseif ($p['status'] == 'Disetujui'): ?>
-                                                    <span class="badge badge-success p-2">Disetujui</span>
-                                                <?php else: ?>
-                                                    <span class="badge badge-danger p-2">Ditolak</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="td-actions">
-                                                <?php if ($p['status'] == 'Pending'): ?>
-                                                    <button type="button" class="btn btn-success btn-sm btn-konfirmasi" data-id="<?= $p['id_perizinan'] ?>" data-status="Disetujui">
-                                                        <i class="material-icons">check</i> Setujui
-                                                    </button>
-                                                    <button type="button" class="btn btn-danger btn-sm btn-konfirmasi" data-id="<?= $p['id_perizinan'] ?>" data-status="Ditolak">
-                                                        <i class="material-icons">close</i> Tolak
-                                                    </button>
-                                                <?php endif; ?>
-                                                <form action="<?= base_url('admin/perizinan/delete/' . $p['id_perizinan']) ?>" method="post" class="d-inline form-delete">
-                                                    <?= csrf_field() ?>
-                                                    <input type="hidden" name="_method" value="DELETE">
-                                                    <button type="button" class="btn btn-link btn-danger btn-sm btn-delete">
-                                                        <i class="material-icons">delete</i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<?= $this->endSection() ?>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
+        
+        <?php if (session()->getFlashdata('msg')): ?>
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= session()->getFlashdata('msg') ?>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        <?php endif; ?>
 
-<?= $this->section('scripts') ?>
-<script>
-    $(document).ready(function() {
-        $('#tablePerizinan').DataTable({
-            columnDefs: [{ orderable: false, targets: [-1] }],
-            order: [[2, 'desc']]
-        });
-
-        // Konfirmasi Status (Setujui/Tolak) - delegated karena DataTable
-        $(document).on('click', '.btn-konfirmasi', function() {
-            const id = $(this).data('id');
-            const status = $(this).data('status');
-
-            swal({
-                title: "Konfirmasi",
-                text: `Apakah Anda yakin ingin mengubah status menjadi ${status}?`,
-                icon: "warning",
-                buttons: ["Batal", "Ya, Lanjutkan"],
-                dangerMode: status === 'Ditolak',
-            }).then((willProcess) => {
-                if (willProcess) {
-                    fetch('<?= base_url('admin/perizinan/konfirmasi') ?>', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: `id_perizinan=${id}&status=${status}&<?= csrf_token() ?>=<?= csrf_hash() ?>`
-                        })
-                        .then(response => response.json())
-                        .then(result => {
-                            if (result.status === 'success') {
-                                swal("Berhasil", result.message, "success").then(() => {
-                                    location.reload();
-                                });
+        <div class="card">
+          <div class="card-header card-header-primary" style="background: linear-gradient(60deg, #ab47bc, #8e24aa);">
+            <h4 class="card-title font-weight-bold text-white">Data Perizinan Guru & Tendik</h4>
+            <p class="card-category text-white-50">Kelola dan konfirmasi pengajuan izin/sakit dari Guru dan Tenaga Kependidikan</p>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="text-primary font-weight-bold">
+                  <th>No</th>
+                  <th>Nama Pegawai</th>
+                  <th>Jabatan</th>
+                  <th>NIP / NUPTK</th>
+                  <th>Tgl Mulai</th>
+                  <th>Tgl Selesai</th>
+                  <th>Tipe Izin</th>
+                  <th>Alasan / Keterangan</th>
+                  <th>Bukti</th>
+                  <th>Status</th>
+                  <th class="text-center">Aksi Konfirmasi</th>
+                </thead>
+                <tbody>
+                  <?php if (!empty($perizinan)): ?>
+                    <?php $no = 1; foreach ($perizinan as $p): ?>
+                      <tr>
+                        <td><?= $no++; ?></td>
+                        <td class="font-weight-bold"><?= esc($p['nama_pegawai'] ?? 'Pegawai'); ?></td>
+                        <td>
+                          <span class="badge badge-<?= ($p['jabatan'] == 'Guru') ? 'info' : 'warning'; ?>">
+                            <?= esc($p['jabatan']); ?>
+                          </span>
+                        </td>
+                        <td><?= esc($p['nomor_identitas'] ?? '-'); ?></td>
+                        <td><?= esc($p['tanggal'] ?? '-'); ?></td>
+                        <td><?= esc($p['tanggal_selesai'] ?? $p['tanggal'] ?? '-'); ?></td>
+                        <td>
+                          <b><?= esc($p['jenis_izin'] ?? 'Izin'); ?></b>
+                        </td>
+                        <td><?= esc($p['keterangan'] ?? '-'); ?></td>
+                        <td>
+                          <?php if (!empty($p['bukti'])): ?>
+                            <a href="<?= base_url('uploads/perizinan/' . $p['bukti']); ?>" target="_blank" class="btn btn-sm btn-info py-1 px-2">
+                              Lihat Bukti
+                            </a>
+                          <?php else: ?>
+                            <span class="text-muted">-</span>
+                          <?php endif; ?>
+                        </td>
+                        <td>
+                          <?php 
+                            $st = strtolower($p['status'] ?? 'pending');
+                            if ($st == 'diterima' || $st == 'disetujui') {
+                                echo '<span class="badge badge-success">Disetujui</span>';
+                            } elseif ($st == 'ditolak') {
+                                echo '<span class="badge badge-danger">Ditolak</span>';
                             } else {
-                                swal("Gagal", result.message, "error");
+                                echo '<span class="badge badge-secondary">Pending</span>';
                             }
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            swal("Error", "Terjadi kesalahan saat memproses data.", "error");
-                        });
-                }
-            });
-        });
+                          ?>
+                        </td>
+                        <td class="td-actions text-center">
+                          <!-- Tombol Setujui -->
+                          <a href="<?= base_url('admin/perizinan/konfirmasi/' . ($p['id_perizinan'] ?? $p['id']) . '?status=diterima'); ?>" class="btn btn-success btn-sm font-weight-bold py-1 px-2" title="Setujui">
+                            Setujui
+                          </a>
+                          <!-- Tombol Tolak -->
+                          <a href="<?= base_url('admin/perizinan/konfirmasi/' . ($p['id_perizinan'] ?? $p['id']) . '?status=ditolak'); ?>" class="btn btn-warning btn-sm font-weight-bold py-1 px-2" title="Tolak">
+                            Tolak
+                          </a>
+                          <!-- Tombol Hapus -->
+                          <a href="<?= base_url('admin/perizinan/delete/' . ($p['id_perizinan'] ?? $p['id'])); ?>" onclick="return confirm('Yakin ingin menghapus data perizinan ini?')" class="btn btn-danger btn-sm font-weight-bold py-1 px-2" title="Hapus">
+                            Hapus
+                          </a>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  <?php else: ?>
+                    <tr>
+                      <td colspan="11" class="text-center text-muted py-4">Belum ada data pengajuan perizinan.</td>
+                    </tr>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-        // Konfirmasi Hapus - delegated karena DataTable
-        $(document).on('click', '.btn-delete', function() {
-            const form = $(this).closest('.form-delete');
-            swal({
-                title: "Hapus Data?",
-                text: "Data yang dihapus tidak dapat dikembalikan!",
-                icon: "warning",
-                buttons: ["Batal", "Hapus"],
-                dangerMode: true,
-            }).then((willDelete) => {
-                if (willDelete) {
-                    form.submit();
-                }
-            });
-        });
-    });
-</script>
+      </div>
+    </div>
+  </div>
+</div>
 <?= $this->endSection() ?>
