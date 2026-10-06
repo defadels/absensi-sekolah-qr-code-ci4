@@ -17,7 +17,10 @@ class Maintenance extends BaseController
             return $this->response->setStatusCode(403)->setBody('Akses ditolak.');
         }
 
-        return view('admin/maintenance/index');
+        return view('admin/maintenance/index', [
+            'title' => 'Maintenance Deploy',
+            'ctx'   => 'maintenance',
+        ]);
     }
 
     public function run()
