@@ -26,19 +26,6 @@
          textOk: "Ok",
          textCancel: "Batalkan"
       };
-
-      // REGISTRASI SERVICE WORKER PWA
-      if ('serviceWorker' in navigator) {
-         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('<?= base_url('sw.js'); ?>')
-               .then(function(reg) {
-                  console.log('PWA ServiceWorker terdaftar:', reg.scope);
-               })
-               .catch(function(err) {
-                  console.log('PWA ServiceWorker gagal:', err);
-               });
-         });
-      }
    </script>
 
    <?= $this->renderSection("scripts") ?>

@@ -38,10 +38,13 @@ $assetVersion = '1.0.1';
 
 <script>
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('<?= base_url('sw.js') ?>')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.log('Service Worker registration failed', err));
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('<?= base_url('sw.js') ?>', {
+        scope: '<?= base_url() ?>',
+        updateViaCache: 'none'
+      }).catch(function(error) {
+        console.warn('PWA belum dapat diaktifkan:', error);
+      });
     });
   }
 </script>

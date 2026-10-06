@@ -80,6 +80,10 @@ Options All -Indexes
 		Header set Cache-Control "public, max-age=31536000, immutable"
 		Header set Expires "Wed, 20 Jan 2027 04:20:42 GMT"
 	</FilesMatch>
+	<FilesMatch "^sw\.js$">
+		Header set Cache-Control "no-cache, no-store, must-revalidate"
+		Header set Expires "0"
+	</FilesMatch>
 	
 	# Fonts: 1 year (versioned)
 	<FilesMatch "\.(woff|woff2|ttf|otf|eot)$">

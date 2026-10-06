@@ -7,7 +7,13 @@
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <meta name="description" content="Absensi Sekolah QR Code - Sistem absensi modern berbasis QR Code">
    <meta name="theme-color" content="#9c27b0">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-status-bar-style" content="default">
    <?= csrf_meta(); ?>
+
+   <link rel="manifest" href="<?= base_url('manifest.json') ?>">
+   <link rel="apple-touch-icon" sizes="192x192" href="<?= base_url('assets/img/pwa-icon-192.png'); ?>">
+   <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon.png'); ?>">
 
    <?= $this->include("templates/css") ?>
 
@@ -54,10 +60,17 @@
       .form-select {
          min-width: 200px;
       }
+
+      @media (max-width: 575.98px) {
+         .form-select {
+            min-width: 0;
+            width: 100%;
+         }
+      }
    </style>
 </head>
 
-<body>
+<body class="pwa-shell">
    <div class="bg bg-image"></div>
 
    <!-- Navbar -->

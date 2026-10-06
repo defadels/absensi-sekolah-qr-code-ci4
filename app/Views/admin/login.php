@@ -71,6 +71,13 @@
                         <div class="clearfix"></div>
                      </form>
 
+                     <div class="text-center mt-3">
+                        <button type="button" id="pwaInstallButton" class="btn btn-outline-primary btn-block" aria-controls="pwaInstallHelp" aria-expanded="false">
+                           <i class="material-icons mr-2" aria-hidden="true">get_app</i> Pasang Aplikasi
+                        </button>
+                        <div id="pwaInstallHelp" class="alert alert-info text-left mt-2 mb-0" role="status" hidden></div>
+                     </div>
+
                      <!-- TOMBOL AKTIVASI / KLAIM AKUN (SUDAH DIPERBAIKI KE /DAFTAR) -->
                      <div class="text-center mt-3">
                          <a href="<?= base_url('daftar'); ?>" class="btn btn-default btn-block" style="background-color: #e91e63; color: white; width: 100%; display: block; text-decoration: none; padding: 12px; border-radius: 4px;">
@@ -103,4 +110,76 @@
       </div>
    </div>
 </div>
+<?= $this->endSection(); ?>
+
+<?= $this->section('scripts'); ?>
+<script>
+   (function () {
+      var installButton = document.getElementById('pwaInstallButton');
+      var installHelp = document.getElementById('pwaInstallHelp');
+      var deferredInstallPrompt = null;
+
+      if (!installButton || !installHelp) {
+         return;
+      }
+
+      function isInstalled() {
+         return window.matchMedia('(display-mode: standalone)').matches
+            || window.navigator.standalone === true;
+      }
+
+      function hideInstallButton() {
+         installButton.hidden = true;
+         installHelp.hidden = true;
+         installButton.setAttribute('aria-expanded', 'false');
+      }
+
+      function showInstallHelp(message) {
+         installHelp.textContent = message;
+         installHelp.hidden = false;
+         installButton.setAttribute('aria-expanded', 'true');
+      }
+
+      if (isInstalled()) {
+         hideInstallButton();
+         return;
+      }
+
+      window.addEventListener('beforeinstallprompt', function (event) {
+         event.preventDefault();
+         deferredInstallPrompt = event;
+      });
+
+      window.addEventListener('appinstalled', hideInstallButton);
+
+      installButton.addEventListener('click', async function () {
+         if (deferredInstallPrompt) {
+            var installPrompt = deferredInstallPrompt;
+            deferredInstallPrompt = null;
+            installPrompt.prompt();
+
+            var choice = await installPrompt.userChoice;
+            if (choice.outcome === 'accepted') {
+               showInstallHelp('Aplikasi berhasil dipasang di perangkat ini.');
+               installButton.hidden = true;
+               return;
+            }
+
+            showInstallHelp('Pemasangan belum dilakukan. Muat ulang halaman nanti untuk mencoba lagi, atau pasang lewat menu browser.');
+            return;
+         }
+
+         var userAgent = window.navigator.userAgent || '';
+         var isAppleMobile = /iPad|iPhone|iPod/.test(userAgent)
+            || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+
+         if (isAppleMobile) {
+            showInstallHelp('Di iPhone atau iPad, buka halaman ini di Safari, ketuk Bagikan, lalu pilih “Tambahkan ke Layar Utama”.');
+            return;
+         }
+
+         showInstallHelp('Buka menu browser, lalu pilih “Instal aplikasi” atau “Tambahkan ke layar utama”. Pastikan situs dibuka melalui HTTPS.');
+      });
+   })();
+</script>
 <?= $this->endSection(); ?>
