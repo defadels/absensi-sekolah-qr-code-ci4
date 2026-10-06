@@ -96,7 +96,8 @@ class Filters extends BaseFilters
                     'daftar', 'daftar/*', 
                     'register', 'register/*', 
                     'izin', 'izin/*', 
-                    'cek-kehadiran', 'cek-kehadiran/*'
+                    'cek-kehadiran', 'cek-kehadiran/*',
+                    'deploy-migrate', 'deploy-seed-superadmin'
                 ]
             ],
             'csrf' => [

@@ -4,15 +4,22 @@ namespace App\Database\Seeds;
 
 use CodeIgniter\Database\Seeder;
 use CodeIgniter\Shield\Entities\User;
+use RuntimeException;
 
 class SuperadminSeeder extends Seeder
 {
     public function run()
     {
-        // Default superadmin credentials
-        $email = 'adminsuper@gmail.com';
-        $username = 'superadmin';
-        $password = 'superadmin';
+        // Never create a production admin with predictable credentials.
+        $email = trim((string) env('SUPERADMIN_SEED_EMAIL', ''));
+        $username = trim((string) env('SUPERADMIN_SEED_USERNAME', ''));
+        $password = (string) env('SUPERADMIN_SEED_PASSWORD', '');
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL) || $username === '' || strlen($password) < 12) {
+            throw new RuntimeException(
+                'Set SUPERADMIN_SEED_EMAIL, SUPERADMIN_SEED_USERNAME, and a SUPERADMIN_SEED_PASSWORD of at least 12 characters in .env.'
+            );
+        }
 
         $userProvider = auth()->getProvider();
 
@@ -43,12 +50,9 @@ class SuperadminSeeder extends Seeder
             // Superadmin gets: superadmin (primary), admin (convenience)
             $user->addGroup('superadmin', 'admin');
 
-            echo "\nSuperadmin created successfully!\n";
-            echo "Username: {$username}\n";
-            echo "Password: {$password}\n";
-            echo "Email: {$email}\n";
+            log_message('info', 'Initial superadmin account created for {email}.', ['email' => $email]);
         } else {
-            echo "Superadmin already exists. Skipping...\n";
+            log_message('info', 'Superadmin seeder skipped because the account already exists.');
         }
     }
 }

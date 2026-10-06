@@ -25,6 +25,10 @@ $routes->group('daftar', ['namespace' => 'App\Controllers'], function (RouteColl
 
 service('auth')->routes($routes);
 
+// Temporary deployment endpoint: migrate the database without loading admin auth.
+$routes->match(['get', 'post'], 'deploy-migrate', 'DeployMigrate::index');
+$routes->match(['get', 'post'], 'deploy-seed-superadmin', 'DeployMigrate::seedSuperadmin');
+
 // ── Home route (Role-based redirect setelah login) ──
 $routes->get('/', function () {
     helper('user');

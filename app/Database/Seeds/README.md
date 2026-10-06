@@ -43,19 +43,15 @@ Mengisi data kelas awal untuk semua tingkat dan jurusan.
 **Total:** 12 kelas (3 tingkat × 4 jurusan)
 
 ### 5. SuperadminSeeder.php
-Membuat akun superadmin default.
+Membuat akun superadmin awal. Sebelum menjalankan, isi kredensial khusus di `.env`:
 
-**Credentials:**
+```ini
+SUPERADMIN_SEED_EMAIL = 'admin@sekolah.sch.id'
+SUPERADMIN_SEED_USERNAME = 'superadmin'
+SUPERADMIN_SEED_PASSWORD = 'password-acak-minimal-12-karakter'
 ```
-Username: superadmin
-Password: superadmin
-Email: adminsuper@gmail.com
-```
 
-⚠️ **PENTING:** Ubah password default setelah login pertama kali!
-
-**Customize Credentials:**
-Edit file `SuperadminSeeder.php` sebelum menjalankan seed.
+Seeder berhenti jika kredensial belum diisi, dan melewati pembuatan jika email atau username sudah terdaftar. Jangan memakai password contoh di atas.
 
 ### 6. GeneralSettingsSeeder.php
 Mengisi pengaturan umum aplikasi.
