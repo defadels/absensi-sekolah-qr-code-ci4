@@ -86,6 +86,13 @@ $routes->group('admin', ['filter' => 'group:superadmin,admin'], function (RouteC
     $routes->get('dashboard', 'Admin\Dashboard::index');
     $routes->get('dashboard/live-stats', 'Admin\Dashboard::getLiveStats');
     $routes->post('dashboard/filter-data', 'Admin\Dashboard::filterData');
+
+    // Deployment maintenance is restricted to superadmins and POST actions.
+    $routes->group('maintenance', ['filter' => 'group:superadmin'], function (RouteCollection $routes) {
+        $routes->get('/', 'Admin\Maintenance::index');
+        $routes->post('run', 'Admin\Maintenance::run');
+    });
+
     $routes->get('admin/perizinan/konfirmasi/(:num)', 'Admin\Perizinan::konfirmasi/$1');
     $routes->get('admin/perizinan/hapus/(:num)', 'Admin\Perizinan::hapus/$1');
 

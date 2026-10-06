@@ -65,6 +65,15 @@ if ($user) {
 }
 
 if (!empty($adminItems)) {
+    if ($user && $user->inGroup('superadmin')) {
+        $adminItems[] = [
+            'title' => 'Maintenance Deploy',
+            'url' => 'admin/maintenance',
+            'icon' => 'build',
+            'context' => 'maintenance',
+        ];
+    }
+
     $sections['Admin'] = $adminItems;
 }
 
